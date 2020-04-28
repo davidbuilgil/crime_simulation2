@@ -28,8 +28,6 @@ library(sf)
 
 rm(list = ls())
 
-set.seed(111)
-
 # Load data on age.
 Age_by_OA_Manchester <- read_csv(here("data","Age_by_OA_Manchester_replicate.csv"))
 
@@ -54,7 +52,7 @@ syn_res_OA <- left_join(syn_res, Age_by_OA_Manchester, by = "OA")
 
 # Create age for each resident based on this distribution.
 # Seed is set for replication.
-set.seed(1612)
+set.seed(1888)
 syn_res_OA <- syn_res_OA %>% 
   mutate(Age = rnorm(n = N, mean = syn_res_OA$mean_age_OA, sd = syn_res_OA$sd_age_OA)) %>% 
   select(ID, OA, Age)
@@ -280,6 +278,12 @@ csew_vf <- csew_vf %>%
   mutate(copsknow = if_else(condition = copsknow == 2, true = 0, false = copsknow),
          copsknow = na_if(x = copsknow, 8),
          copsknow = na_if(x = copsknow, 9))
+
+# Recode victarea variable to binary for regression model.
+csew_vf <- csew_vf %>% 
+  mutate(victarea = if_else(condition = victarea == 2, true = 0, false = victarea),
+         victarea = na_if(x = victarea, 8),
+         victarea = na_if(x = victarea, 9))
   
 # Filter vehicle crime types.
 csew_vf_vehicle <-  csew_vf %>% 
@@ -383,8 +387,95 @@ Data_violence <- Data_violence %>%
 table(csew_vf_violence$copsknow)
 table(Data_violence$copsknow)
 
+# Create GLM formula for predicting victarea (dep. var.) with demographic variables (ind. var.).
+glm_victarea <- victarea ~ age + sex + reseth + remploy + educat2
+
+# Vehicle model.
+model_area_vehicle <- glm(formula = glm_victarea, family = binomial(link = "logit"), data = csew_vf_vehicle)
+summary(model_area_vehicle)
+PseudoR2(model_area_vehicle)
+
+# Residence model.
+model_area_residence <- glm(formula = glm_victarea, family = binomial(link = "logit"), data = csew_vf_residence)
+summary(model_area_residence)
+PseudoR2(model_area_residence)
+
+# Theft model.
+model_area_theft <- glm(formula = glm_victarea, family = binomial(link = "logit"), data = csew_vf_theft)
+summary(model_area_theft)
+PseudoR2(model_area_theft)
+
+# Violence model.
+model_area_violence <- glm(formula = glm_victarea, family = binomial(link = "logit"), data = csew_vf_violence)
+summary(model_area_violence)
+PseudoR2(model_area_vehicle)
+
+# Extract estimates for vehicle crime.
+Data_vehicle <- Data_vehicle %>% 
+  mutate(estimates = model_area_vehicle$coefficients[1] +
+           Data_vehicle$Age       * model_area_vehicle$coefficients[2] +
+           Data_vehicle$Male      * model_area_vehicle$coefficients[3] +
+           Data_vehicle$White     * model_area_vehicle$coefficients[4] +
+           Data_vehicle$No_income * model_area_vehicle$coefficients[5] +
+           Data_vehicle$High_edu  * model_area_vehicle$coefficients[6],
+         exp_estimates = exp(estimates) / (1 + exp(estimates)),
+         victarea = rbinom(nrow(Data_vehicle), 1, exp_estimates))
+
+# Check vehicle frequency distributions comparison.
+table(csew_vf_vehicle$victarea)
+table(Data_vehicle$victarea)
+
+# Extract estimates for residence crime.
+Data_residence <- Data_residence %>% 
+  mutate(estimates = model_area_residence$coefficients[1] +
+           Data_residence$Age       * model_area_residence$coefficients[2] +
+           Data_residence$Male      * model_area_residence$coefficients[3] +
+           Data_residence$White     * model_area_residence$coefficients[4] +
+           Data_residence$No_income * model_area_residence$coefficients[5] +
+           Data_residence$High_edu  * model_area_residence$coefficients[6],
+         exp_estimates = exp(estimates) / (1 + exp(estimates)),
+         victarea = rbinom(nrow(Data_residence), 1, exp_estimates))
+
+# Check residence frequency distrbibutions comparison.
+table(csew_vf_residence$victarea)
+table(Data_residence$victarea)
+
+# Extract theft for residence crime.
+Data_theft <- Data_theft %>% 
+  mutate(estimates = model_area_theft$coefficients[1] +
+           Data_theft$Age       * model_area_theft$coefficients[2] +
+           Data_theft$Male      * model_area_theft$coefficients[3] +
+           Data_theft$White     * model_area_theft$coefficients[4] +
+           Data_theft$No_income * model_area_theft$coefficients[5] +
+           Data_theft$High_edu  * model_area_theft$coefficients[6],
+         exp_estimates = exp(estimates) / (1 + exp(estimates)),
+         victarea = rbinom(nrow(Data_theft), 1, exp_estimates))
+
+# Check theft frequency distrbibutions comparison.
+table(csew_vf_theft$victarea)
+table(Data_theft$victarea)
+
+# Extract violence for residence crime.
+Data_violence <- Data_violence %>% 
+  mutate(estimates = model_area_violence$coefficients[1] +
+           Data_violence$Age       * model_area_violence$coefficients[2] +
+           Data_violence$Male      * model_area_violence$coefficients[3] +
+           Data_violence$White     * model_area_violence$coefficients[4] +
+           Data_violence$No_income * model_area_violence$coefficients[5] +
+           Data_violence$High_edu  * model_area_violence$coefficients[6],
+         exp_estimates = exp(estimates) / (1 + exp(estimates)),
+         victarea = rbinom(nrow(Data_violence), 1, exp_estimates))
+
+# Check violence frequency distrbibutions comparison.
+table(csew_vf_violence$victarea)
+table(Data_violence$victarea)
+
 # Row bind each crime type data frame. Involves some factor -> character coercion for binding.
 Data_crimes <- bind_rows(Data_vehicle, Data_residence, Data_theft, Data_violence)
+
+# Select only crimes that happen in local area.
+Data_crimes <- Data_crimes %>%
+  filter(victarea == 1)
 
 # Load in census unit look-up table (OA, LSOA, MSOA, LAD).
 OA_to_LAD <- read_csv(here("data","Output_Area_to_Lower_Layer_Super_Output_Area_to_Middle_Layer_Super_Output_Area_to_Local_Authority_District_December_2017_Lookup_in_Great_Britain__Classification_Version_2.csv"))
@@ -691,7 +782,7 @@ ward_agg_list <- lapply(ward_agg_list, function(x) x %>% rename(code = wd18cd))
 
 # Join all.
 join_fun <- function(x, y){
-  left_join(x, y, by = c("unit" = "code"))
+  right_join(x, y, by = c("unit" = "code"))
 }
 
 # Run through join on each list.
@@ -710,19 +801,23 @@ ward_compare_df <- bind_rows(ward_compare_list, .id = "crime_type")
 # Compute correlations between crimes known to police (estimated from CSEW) and crime recorded by GMP.
 cor_oa_df <- oa_compare_df %>% 
   group_by(crime_type) %>%
-  summarise(corr = cor(known, count, method = "spearman"))
+  summarise(corr = cor.test(known, count, method = "spearman")$estimate,
+            p    = cor.test(known, count, method = "spearman")$p.value)
 
 cor_lsoa_df <- lsoa_compare_df %>% 
   group_by(crime_type) %>%
-  summarise(corr = cor(known, count, method = "spearman"))
+  summarise(corr = cor.test(known, count, method = "spearman")$estimate,
+            p    = cor.test(known, count, method = "spearman")$p.value)
 
 cor_msoa_df <- msoa_compare_df %>% 
   group_by(crime_type) %>%
-  summarise(corr = cor(known, count, method = "spearman"))
+  summarise(corr = cor.test(known, count, method = "spearman")$estimate,
+            p    = cor.test(known, count, method = "spearman")$p.value)
 
 cor_ward_df <- ward_compare_df %>% 
   group_by(crime_type) %>%
-  summarise(corr = cor(known, count, method = "spearman"))
+  summarise(corr = cor.test(known, count, method = "spearman")$estimate,
+            p    = cor.test(known, count, method = "spearman")$p.value)
 
 # Regain spatial attributes.
 oa_compare_sf_list   <- lapply(oa_compare_list  , function(x) st_as_sf(x))
