@@ -844,6 +844,32 @@ lsoa_prox$neighbours
 msoa_prox$neighbours
 ward_prox$neighbours
 
+# Global Morans'I
+
+mi_oa_df <- oa_compare_df %>%
+  group_by(crime_type) %>%
+  summarise(mi   = lm.morantest.exact(lm(known ~ count), oa_prox)$estimate[1],
+            stat = lm.morantest.exact(lm(known ~ count), oa_prox)$statistic,
+            p    = lm.morantest.exact(lm(known ~ count), oa_prox)$p.value)
+
+mi_lsoa_df <- lsoa_compare_df %>%
+  group_by(crime_type) %>%
+  summarise(mi   = lm.morantest.exact(lm(known ~ count), lsoa_prox)$estimate[1],
+            stat = lm.morantest.exact(lm(known ~ count), lsoa_prox)$statistic,
+            p    = lm.morantest.exact(lm(known ~ count), lsoa_prox)$p.value)
+
+mi_msoa_df <- msoa_compare_df %>%
+  group_by(crime_type) %>%
+  summarise(mi   = lm.morantest.exact(lm(known ~ count), msoa_prox)$estimate[1],
+            stat = lm.morantest.exact(lm(known ~ count), msoa_prox)$statistic,
+            p    = lm.morantest.exact(lm(known ~ count), msoa_prox)$p.value)
+
+
+
+
+
+
+
 # Temporary test: single local moran's I check for all crimes at Ward level.
 type_temp <-  "all_crimes"
 
