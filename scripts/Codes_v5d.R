@@ -844,25 +844,44 @@ lsoa_prox$neighbours
 msoa_prox$neighbours
 ward_prox$neighbours
 
-# Global Morans'I
-
+# Global Morans'I.
 mi_oa_df <- oa_compare_df %>%
   group_by(crime_type) %>%
-  summarise(mi   = lm.morantest.exact(lm(known ~ count), oa_prox)$estimate[1],
-            stat = lm.morantest.exact(lm(known ~ count), oa_prox)$statistic,
-            p    = lm.morantest.exact(lm(known ~ count), oa_prox)$p.value)
+  summarise(mi   = lm.morantest.exact(lm(rank(known) ~ rank(count)), oa_prox)$estimate,
+            stat = lm.morantest.exact(lm(rank(known) ~ rank(count)), oa_prox)$statistic,
+            p    = lm.morantest.exact(lm(rank(known) ~ rank(count)), oa_prox)$p.value)
 
 mi_lsoa_df <- lsoa_compare_df %>%
   group_by(crime_type) %>%
-  summarise(mi   = lm.morantest.exact(lm(known ~ count), lsoa_prox)$estimate[1],
-            stat = lm.morantest.exact(lm(known ~ count), lsoa_prox)$statistic,
-            p    = lm.morantest.exact(lm(known ~ count), lsoa_prox)$p.value)
+  summarise(mi   = lm.morantest.exact(lm(rank(known) ~ rank(count)), lsoa_prox)$estimate,
+            stat = lm.morantest.exact(lm(rank(known) ~ rank(count)), lsoa_prox)$statistic,
+            p    = lm.morantest.exact(lm(rank(known) ~ rank(count)), lsoa_prox)$p.value)
 
 mi_msoa_df <- msoa_compare_df %>%
   group_by(crime_type) %>%
-  summarise(mi   = lm.morantest.exact(lm(known ~ count), msoa_prox)$estimate[1],
-            stat = lm.morantest.exact(lm(known ~ count), msoa_prox)$statistic,
-            p    = lm.morantest.exact(lm(known ~ count), msoa_prox)$p.value)
+  summarise(mi   = lm.morantest.exact(lm(rank(known) ~ rank(count)), msoa_prox)$estimate,
+            stat = lm.morantest.exact(lm(rank(known) ~ rank(count)), msoa_prox)$statistic,
+            p    = lm.morantest.exact(lm(rank(known) ~ rank(count)), msoa_prox)$p.value)
+
+mi_ward_df <- ward_compare_df %>%
+  group_by(crime_type) %>%
+  summarise(mi   = lm.morantest.exact(lm(rank(known) ~ rank(count)), ward_prox)$estimate,
+            stat = lm.morantest.exact(lm(rank(known) ~ rank(count)), ward_prox)$statistic,
+            p    = lm.morantest.exact(lm(rank(known) ~ rank(count)), ward_prox)$p.value)
+
+
+# ==============================================================
+# ==============================================================
+# David: Edited down to here 28.04.2020 ========================
+# ==============================================================
+# ==============================================================
+
+
+
+
+
+
+
 
 
 
