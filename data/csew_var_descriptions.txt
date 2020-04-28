@@ -1,0 +1,10 @@
+#vandalism or theft of or from vehicle: nmotthef (vehicle stolen), nmotstol (something stolen from vehicle), ncardam (vehicle damaged by vandals),
+  #nbikthet (theft of bike)
+#vandalism or theft from residence: nprevthe (someont get in and steal something), nprevdam (get into house and cause damage), 
+  #nprevtry (try to fet in house without permission), nprevsto (something stolen out of house), nproside (anything stolen from doorstep, garden, garage),
+  #nprdefac (something damaged outside house), nhomthef (someone get into new house and steal), nyrhthef (steal from new house), nyrhodam (damage new house),
+  #nyrhotry (tried to get in new house), nyrhosto (stolen out from new house), nyroside (stolen from garden new house), nyrdefac (damage outside new house)
+#theft: npersth (something you were carrying stolen out of hands), ntrypers (tried to steal out from hands), noththef (something stolen)
+#damage: ndelibda
+#violence: ndelibv (hit you with fits or weapon), nthrevio (threat to use violence), nsexatt (sexual assault or interference), nhhldvio (violence from
+  #someone in household)

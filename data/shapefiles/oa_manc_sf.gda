@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project>
+    <title>oa_manc_sf</title>
+    <layers>
+        <layer>
+            <datasource>
+                <type>ESRI Shapefile</type>
+                <path>oa_manc_sf.shp</path>
+            </datasource>
+            <layername>oa_manc_sf</layername>
+            <title/>
+            <variable_order>
+                <time_ids>
+                    <id>time 0</id>
+                </time_ids>
+                <var>POLY_ID</var>
+                <var>code</var>
+            </variable_order>
+            <custom_classifications/>
+            <weights_entries>
+                <weights>
+                    <title>oa_manc_sf</title>
+                    <default/>
+                    <meta_info>
+                        <weights_type>queen</weights_type>
+                        <order>1</order>
+                        <inc_lower_orders>false</inc_lower_orders>
+                        <path>oa_manc_sf.gal</path>
+                        <id_variable>POLY_ID</id_variable>
+                        <symmetry>symmetric</symmetry>
+                        <num_observations>1530</num_observations>
+                        <min_neighbors>1</min_neighbors>
+                        <max_neighbors>17</max_neighbors>
+                        <mean_neighbors>5.857516339869281</mean_neighbors>
+                        <median_neighbors>6</median_neighbors>
+                        <non_zero_perc>0.3828442052202145</non_zero_perc>
+                    </meta_info>
+                </weights>
+            </weights_entries>
+            <default_vars>
+                <default_var>
+                    <name/>
+                    <time_id>time 0</time_id>
+                </default_var>
+                <default_var>
+                    <name/>
+                    <time_id>time 0</time_id>
+                </default_var>
+                <default_var>
+                    <name/>
+                    <time_id>time 0</time_id>
+                </default_var>
+                <default_var>
+                    <name/>
+                    <time_id>time 0</time_id>
+                </default_var>
+            </default_vars>
+        </layer>
+    </layers>
+</project>
