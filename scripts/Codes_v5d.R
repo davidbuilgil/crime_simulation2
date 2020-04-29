@@ -8,25 +8,15 @@
 #                                                      #
 ########################################################
 
-# Load packages required.
-library(cowplot)
-library(purrr)
-library(devtools)
-library(maptools)
-library(spdep)
-library(DescTools)
-library(MASS)
-library(haven)
-library(here)
-library(readr)
-library(dplyr)
-library(tidyr)
-library(forcats)
-library(ggplot2)
-library(sf)
-
-
 rm(list = ls())
+
+# Load packages required.
+packages <- c("cowplot", "purrr"    , "devtools", "maptools",
+              "spdep"  , "DescTools", "MASS"    , "haven"   , 
+              "here"   , "readr"    , "dplyr"   , "tidyr"   , 
+              "forcats", "ggplot2"  , "sf")
+
+lapply(packages, require, character.only = TRUE)
 
 # Load data on age.
 Age_by_OA_Manchester <- read_csv(here("data","Age_by_OA_Manchester_replicate.csv"))
@@ -52,7 +42,7 @@ syn_res_OA <- left_join(syn_res, Age_by_OA_Manchester, by = "OA")
 
 # Create age for each resident based on this distribution.
 # Seed is set for replication.
-set.seed(1888)
+set.seed(500)
 syn_res_OA <- syn_res_OA %>% 
   mutate(Age = rnorm(n = N, mean = syn_res_OA$mean_age_OA, sd = syn_res_OA$sd_age_OA)) %>% 
   select(ID, OA, Age)
@@ -610,7 +600,8 @@ rd_fun <- function(x) {
 
 # Compile into list and name
 units_list <- list(crimes_units, vehicle_units, residence_units, theft_units, violent_units)
-names(units_list) <- c("all_crimes", "vehicle_crime", "residence_crime", "theft_crime", "violent_crime")
+names(units_list) <- c("all_crimes", "vehicle", "residence", "theft", "violent")
+#names(units_list) <- c("all_crimes", "vehicle_crime", "residence_crime", "theft_crime", "violent_crime")
 
 # Loop funtion thru list
 rd_stats_list <- lapply(units_list, rd_fun)
@@ -678,8 +669,13 @@ lapply(rd_stats_list, ARB_fun)
 # Load crimes known to Greater Manchester Police in 2011/12.
 GMP_all <- read_csv(here("data/GMP_all.csv"))
 
+# Merge spatial information of wards.
+GMP_manc <- GMP_all %>%
+  left_join(LSOA_to_ward, by = c("lsoa11cd" = "LSOA")) %>%
+  filter(ladnm == "Manchester")
+
 # Check to remove crimes which did not occurr within a Manchester LSOA.
-GMP_manc <- subset(GMP_all, LSOA.code %in% LSOA_to_ward$LSOA)
+#GMP_manc <- subset(GMP_all, LSOA.code %in% LSOA_to_ward$LSOA)
 
 # Recode crime types to match categories used thus far.
 GMP_manc <- GMP_manc %>%
@@ -694,7 +690,8 @@ GMP_manc <- GMP_manc %>%
                              "Robbery"                     = "theft",
                              "Shoplifting"                 = "other",
                              "Vehicle crime"               = "vehicle",
-                             "Violent crime"               = "violent")) 
+                             "Violent crime"               = "violent")) %>%
+  filter(Crime.type == "residence" | Crime.type == "theft" | Crime.type == "vehicle" | Crime.type == "violent")
 
 # Subset GMP_all by the different crime type categories.
 GMP_all_list <- group_split(GMP_manc, Crime.type)
@@ -703,7 +700,8 @@ GMP_all_list <- group_split(GMP_manc, Crime.type)
 GMP_all_list <- c((GMP_all_list), list(GMP_manc))
 
 # Rename elements of the list (order checked manually).
-names(GMP_all_list) <- c("other", "residence_crime", "theft_crime", "vehicle_crime", "violent_crime", "all_crimes")
+names(GMP_all_list) <- c("residence", "theft", "vehicle", "violent", "all_crimes")
+#names(GMP_all_list) <- c("other", "residence_crime", "theft_crime", "vehicle_crime", "violent_crime", "all_crimes")
 
 # Create sf point objects for each df in the list.
 GMP_all_list_sf <- lapply(GMP_all_list, function(x)st_as_sf(x, coords = c(x = "Longitude", y = "Latitude"), crs = 4326))
@@ -743,10 +741,10 @@ lsoa_agg_list <- lapply(GMP_all_list_sf, function(x)lsoa_sf %>% mutate(count = l
 oa_agg_list <- lapply(GMP_all_list_sf, function(x)oa_sf %>% mutate(count = lengths(st_intersects(oa_sf, x))))
 
 # Remove 'other' category so the merge works. We don't use it for analysis but it was needed to get the total crime figure.
-oa_agg_list   <- oa_agg_list  [-1]
-lsoa_agg_list <- lsoa_agg_list[-1]
-msoa_agg_list <- msoa_agg_list[-1]
-ward_agg_list <- ward_agg_list[-1]
+#oa_agg_list   <- oa_agg_list  [-1]
+#lsoa_agg_list <- lsoa_agg_list[-1]
+#msoa_agg_list <- msoa_agg_list[-1]
+#ward_agg_list <- ward_agg_list[-1]
 
 # Join this real police recorded crime data with our CSEW estimates.
 
@@ -798,7 +796,119 @@ lsoa_compare_df <- bind_rows(lsoa_compare_list, .id = "crime_type")
 msoa_compare_df <- bind_rows(msoa_compare_list, .id = "crime_type")
 ward_compare_df <- bind_rows(ward_compare_list, .id = "crime_type")
 
-# Compute correlations between crimes known to police (estimated from CSEW) and crime recorded by GMP.
+
+
+
+
+
+
+
+# Aggregate crime data without searching points in polygons.
+# At the Output Area level.
+oa_agg <- GMP_manc %>%
+  group_by(Crime.type, oa11) %>%
+  summarise(GMP_agg = n()) %>%
+  filter(Crime.type != "other") %>%
+  rename(crime_type = Crime.type,
+         unit       = oa11)
+
+oa_agg_all <- GMP_manc %>%
+  group_by(oa11) %>%
+  summarise(GMP_agg = n()) %>%
+  mutate(Crime.type = "all_crimes") %>%
+  select(Crime.type, oa11, GMP_agg) %>%
+  rename(crime_type = Crime.type,
+         unit       = oa11)
+
+oa_agg <- bind_rows(oa_agg, oa_agg_all)
+
+# At the LSOA level.
+lsoa_agg <- GMP_manc %>%
+  group_by(Crime.type, lsoa11cd) %>%
+  summarise(GMP_agg = n()) %>%
+  rename(crime_type = Crime.type,
+         unit       = lsoa11cd)
+
+lsoa_agg_all <- GMP_manc %>%
+  group_by(lsoa11cd) %>%
+  summarise(GMP_agg = n()) %>%
+  mutate(Crime.type = "all_crimes") %>%
+  select(Crime.type, lsoa11cd, GMP_agg) %>%
+  rename(crime_type = Crime.type,
+         unit       = lsoa11cd)
+
+lsoa_agg <- bind_rows(lsoa_agg, lsoa_agg_all)
+
+# At the MSOA level.
+msoa_agg <- GMP_manc %>%
+  group_by(Crime.type, msoa11cd) %>%
+  summarise(GMP_agg = n()) %>%
+  rename(crime_type = Crime.type,
+         unit       = msoa11cd)
+
+msoa_agg_all <- GMP_manc %>%
+  group_by(msoa11cd) %>%
+  summarise(GMP_agg = n()) %>%
+  mutate(Crime.type = "all_crimes") %>%
+  select(Crime.type, msoa11cd, GMP_agg) %>%
+  rename(crime_type = Crime.type,
+         unit       = msoa11cd)
+
+msoa_agg <- bind_rows(msoa_agg, msoa_agg_all)
+
+# At the Ward level.
+wd_agg <- GMP_manc %>%
+  group_by(Crime.type, WD18CD) %>%
+  summarise(GMP_agg = n()) %>%
+  rename(crime_type = Crime.type,
+         unit       = WD18CD)
+
+wd_agg_all <- GMP_manc %>%
+  group_by(WD18CD) %>%
+  summarise(GMP_agg = n()) %>%
+  mutate(Crime.type = "all_crimes") %>%
+  select(Crime.type, WD18CD, GMP_agg) %>%
+  rename(crime_type = Crime.type,
+         unit       = WD18CD)
+
+wd_agg <- bind_rows(wd_agg, wd_agg_all)
+
+# Bind togethe with main comparison dataset.
+oa_compare_df <- oa_compare_df %>%
+  select(-unit_type) %>%
+  full_join(oa_agg, by = c("crime_type", "unit")) %>%
+  replace(is.na(.), 0)
+lsoa_compare_df <- lsoa_compare_df %>%
+  full_join(lsoa_agg, by = c("crime_type", "unit")) %>%
+  replace(is.na(.), 0)
+msoa_compare_df <- msoa_compare_df %>%
+  full_join(msoa_agg, by = c("crime_type", "unit")) %>%
+  replace(is.na(.), 0)
+ward_compare_df <- ward_compare_df %>%
+  full_join(wd_agg, by = c("crime_type", "unit"))
+
+# Compute correlations between crimes known to police (simulated data) and crime recorded by GMP (direct aggregates).
+cor_oa_df <- oa_compare_df %>% 
+  group_by(crime_type) %>%
+  summarise(corr = cor.test(known, GMP_agg, method = "spearman")$estimate,
+            p    = cor.test(known, GMP_agg, method = "spearman")$p.value)
+
+cor_lsoa_df <- lsoa_compare_df %>% 
+  group_by(crime_type) %>%
+  summarise(corr = cor.test(known, GMP_agg, method = "spearman")$estimate,
+            p    = cor.test(known, GMP_agg, method = "spearman")$p.value)
+
+cor_msoa_df <- msoa_compare_df %>% 
+  group_by(crime_type) %>%
+  summarise(corr = cor.test(known, GMP_agg, method = "spearman")$estimate,
+            p    = cor.test(known, GMP_agg, method = "spearman")$p.value)
+
+cor_ward_df <- ward_compare_df %>% 
+  group_by(crime_type) %>%
+  summarise(corr = cor.test(known, GMP_agg, method = "spearman")$estimate,
+            p    = cor.test(known, GMP_agg, method = "spearman")$p.value)
+
+# Compute correlations between crimes known to police (simulated data) and crime recorded by GMP (points in polygons).
 cor_oa_df <- oa_compare_df %>% 
   group_by(crime_type) %>%
   summarise(corr = cor.test(known, count, method = "spearman")$estimate,
@@ -847,32 +957,55 @@ ward_prox$neighbours
 # Global Morans'I.
 mi_oa_df <- oa_compare_df %>%
   group_by(crime_type) %>%
-  summarise(mi   = lm.morantest.exact(lm(rank(known) ~ rank(count)), oa_prox)$estimate,
-            stat = lm.morantest.exact(lm(rank(known) ~ rank(count)), oa_prox)$statistic,
-            p    = lm.morantest.exact(lm(rank(known) ~ rank(count)), oa_prox)$p.value)
+  summarise(mi   = lm.morantest.exact(lm(known ~ count), oa_prox)$estimate,
+            stat = lm.morantest.exact(lm(known ~ count), oa_prox)$statistic,
+            p    = lm.morantest.exact(lm(known ~ count), oa_prox)$p.value)
+
+mi_oa_df <- oa_compare_df %>%
+  group_by(crime_type) %>%
+  summarise(mi   = lm.morantest.exact(lm(known ~ GMP_agg), oa_prox)$estimate,
+            stat = lm.morantest.exact(lm(known ~ GMP_agg), oa_prox)$statistic,
+            p    = lm.morantest.exact(lm(known ~ GMP_agg), oa_prox)$p.value)
 
 mi_lsoa_df <- lsoa_compare_df %>%
   group_by(crime_type) %>%
-  summarise(mi   = lm.morantest.exact(lm(rank(known) ~ rank(count)), lsoa_prox)$estimate,
-            stat = lm.morantest.exact(lm(rank(known) ~ rank(count)), lsoa_prox)$statistic,
-            p    = lm.morantest.exact(lm(rank(known) ~ rank(count)), lsoa_prox)$p.value)
+  summarise(mi   = lm.morantest.exact(lm(known ~ count), lsoa_prox)$estimate,
+            stat = lm.morantest.exact(lm(known ~ count), lsoa_prox)$statistic,
+            p    = lm.morantest.exact(lm(known ~ count), lsoa_prox)$p.value)
+
+mi_lsoa_df <- lsoa_compare_df %>%
+  group_by(crime_type) %>%
+  summarise(mi   = lm.morantest.exact(lm(known ~ GMP_agg), lsoa_prox)$estimate,
+            stat = lm.morantest.exact(lm(known ~ GMP_agg), lsoa_prox)$statistic,
+            p    = lm.morantest.exact(lm(known ~ GMP_agg), lsoa_prox)$p.value)
 
 mi_msoa_df <- msoa_compare_df %>%
   group_by(crime_type) %>%
-  summarise(mi   = lm.morantest.exact(lm(rank(known) ~ rank(count)), msoa_prox)$estimate,
-            stat = lm.morantest.exact(lm(rank(known) ~ rank(count)), msoa_prox)$statistic,
-            p    = lm.morantest.exact(lm(rank(known) ~ rank(count)), msoa_prox)$p.value)
+  summarise(mi   = lm.morantest.exact(lm(known ~ count), msoa_prox)$estimate,
+            stat = lm.morantest.exact(lm(known ~ count), msoa_prox)$statistic,
+            p    = lm.morantest.exact(lm(known ~ count), msoa_prox)$p.value)
+
+mi_msoa_df <- msoa_compare_df %>%
+  group_by(crime_type) %>%
+  summarise(mi   = lm.morantest.exact(lm(known ~ GMP_agg), msoa_prox)$estimate,
+            stat = lm.morantest.exact(lm(known ~ GMP_agg), msoa_prox)$statistic,
+            p    = lm.morantest.exact(lm(known ~ GMP_agg), msoa_prox)$p.value)
 
 mi_ward_df <- ward_compare_df %>%
   group_by(crime_type) %>%
-  summarise(mi   = lm.morantest.exact(lm(rank(known) ~ rank(count)), ward_prox)$estimate,
-            stat = lm.morantest.exact(lm(rank(known) ~ rank(count)), ward_prox)$statistic,
-            p    = lm.morantest.exact(lm(rank(known) ~ rank(count)), ward_prox)$p.value)
+  summarise(mi   = lm.morantest.exact(lm(known ~ count), ward_prox)$estimate,
+            stat = lm.morantest.exact(lm(known ~ count), ward_prox)$statistic,
+            p    = lm.morantest.exact(lm(known ~ count), ward_prox)$p.value)
 
+mi_ward_df <- ward_compare_df %>%
+  group_by(crime_type) %>%
+  summarise(mi   = lm.morantest.exact(lm(known ~ GMP_agg), ward_prox)$estimate,
+            stat = lm.morantest.exact(lm(known ~ GMP_agg), ward_prox)$statistic,
+            p    = lm.morantest.exact(lm(known ~ GMP_agg), ward_prox)$p.value)
 
 # ==============================================================
 # ==============================================================
-# David: Edited down to here 28.04.2020 ========================
+# David: Edited down to here 29.04.2020 ========================
 # ==============================================================
 # ==============================================================
 
