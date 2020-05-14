@@ -655,16 +655,19 @@ rd_stats_df <- bind_rows(rd_stats_list, .id = "crime_type")
 
 full_plot_group <- ggplot(data = rd_stats_df) +
   theme_bw() +
-  geom_boxplot(mapping = aes(x = crime_type,  y = abs_RD, fill = unit_type), colour = "black", size = 0.5) +
+  geom_boxplot(mapping = aes(x = crime_type,  y = abs_RD, fill = unit_type), colour = "black", size = 0.5,
+               position=position_dodge(width=1), width = 0.9) +
   labs(y = "RD", x = "", fill = "") +
   scale_fill_viridis_d(alpha = 0.7) +
   scale_x_discrete(labels = c("All crime","Residence","Theft","Vehicle","Violent")) + 
   theme(legend.position = "top",
         axis.title = element_text(size = 14),
-        axis.text = element_text(size = 14))
+        axis.text = element_text(size = 14),
+        legend.key.size = unit(1.5, "cm"))
 
 # Save full grouped plot
 ggsave(plot = full_plot_group, filename = "visuals/full_boxplot_grouped.png", height = 10, width = 12)
+# ggsave(plot = full_plot_group, filename = "visuals/full_boxplot_grouped_outliers.png", height = 10, width = 12)
 
 # Function to calculate ARB stats for each crime type.
 ARB_fun <- function(x){
@@ -898,32 +901,39 @@ ward_compare_df <- ward_compare_df %>%
   full_join(wd_agg, by = c("crime_type", "unit"))
 
 # Map comparisons 14.05.20.
-# Join spatial data back in.
-oa_compare_all_df <- filter(oa_compare_df, crime_type == "all_crimes")
-oa_compare_sf <- left_join(oa_sf, oa_compare_all_df, by = c("code" = "unit"))
+# Filter for all crimes and make spatial again.
+oa_compare_all_sf <- oa_compare_df %>% 
+  filter(crime_type == "all_crimes") %>% 
+  st_as_sf(sf_column_name = "geometry")]
 
 # Map function.
 map_fun <- function(x){
   p1 <- ggplot(data = x) +
-    geom_sf(mapping = aes(fill = count), colour = "transparent") +
-    scale_fill_viridis_c() +
-    theme_minimal() +
-    labs(fill = "") +
-    theme(legend.position = "bottom") 
-  p2 <- ggplot(data = x) +
     geom_sf(mapping = aes(fill = all_crimes), colour = "transparent") +
-    scale_fill_viridis_c() +
+    scale_fill_viridis_c(limits = c(0,1700)) +
     theme_minimal() +
     labs(fill = "") +
-    theme(legend.position = "bottom") 
-  plot_grid(p1, p2, labels = c("Police recorded crime", "Simulated crime"), scale = 0.9)
+    theme(legend.position = "none")
+  p2 <- ggplot(data = x) +
+    geom_sf(mapping = aes(fill = count), colour = "transparent") +
+    scale_fill_viridis_c(limits = c(0,1700)) +
+    theme_minimal() +
+    labs(fill = "") +
+    theme(legend.position = "none") 
+  temp <- ggplot(data = x) +
+    geom_sf(aes(fill = count)) +
+    scale_fill_viridis_c(limits = c(0,1700)) +
+    theme(legend.position = "bottom") +
+    guides(fill = guide_colorbar(barwidth=20, barheight = 1)) + labs(fill = NULL)
+  leg <- get_legend(temp)
+plot_maps <-   plot_grid(p1, p2, labels = c("Simulated crime","Police recorded crime"),
+            scale = 0.9, label_fontface = "plain")
+plot_grid(plot_maps, leg, nrow = 2, rel_heights = c(10,1))
 }
 
-
-# Test.
-map_fun(oa_compare_sf)
-
-
+# Plot and save OA.
+temp <- map_fun(oa_compare_all_sf)
+ggsave(plot = temp, filename = "visuals/map_comaprison_oa.png", height = 24, width = 24, unit = "cm")
 
 # Compute correlations between crimes known to police (simulated data) and crime recorded by GMP (direct aggregates).
 cor_oa_df <- oa_compare_df %>% 
@@ -1046,19 +1056,6 @@ mi_ward_df <- ward_compare_df %>%
 # David: Edited down to here 29.04.2020 ========================
 # ==============================================================
 # ==============================================================
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # Temporary test: single local moran's I check for all crimes at Ward level.
 type_temp <-  "all_crimes"
