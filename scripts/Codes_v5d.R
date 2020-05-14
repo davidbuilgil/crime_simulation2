@@ -901,39 +901,80 @@ ward_compare_df <- ward_compare_df %>%
   full_join(wd_agg, by = c("crime_type", "unit"))
 
 # Map comparisons 14.05.20.
+# OA ===
 # Filter for all crimes and make spatial again.
 oa_compare_all_sf <- oa_compare_df %>% 
   filter(crime_type == "all_crimes") %>% 
-  st_as_sf(sf_column_name = "geometry")]
+  st_as_sf(sf_column_name = "geometry")
 
 # Map function.
-map_fun <- function(x){
+oa_map_fun <- function(x){
   p1 <- ggplot(data = x) +
     geom_sf(mapping = aes(fill = all_crimes), colour = "transparent") +
-    scale_fill_viridis_c(limits = c(0,1700)) +
     theme_minimal() +
+    scale_fill_viridis_c(limits = c(0,1700)) +
     labs(fill = "") +
-    theme(legend.position = "none")
+    theme(legend.position = "none") +
+    guides(fill = guide_colorbar(barwidth=10, barheight = 1)) + labs(fill = NULL)
   p2 <- ggplot(data = x) +
-    geom_sf(mapping = aes(fill = count), colour = "transparent") +
-    scale_fill_viridis_c(limits = c(0,1700)) +
+    geom_sf(mapping = aes(fill = known), colour = "transparent") +
     theme_minimal() +
+    scale_fill_viridis_c(limits = c(0,1700)) +
     labs(fill = "") +
-    theme(legend.position = "none") 
+    theme(legend.position = "none") +
+    guides(fill = guide_colorbar(barwidth=10, barheight = 1)) + labs(fill = NULL)
   temp <- ggplot(data = x) +
     geom_sf(aes(fill = count)) +
     scale_fill_viridis_c(limits = c(0,1700)) +
     theme(legend.position = "bottom") +
     guides(fill = guide_colorbar(barwidth=20, barheight = 1)) + labs(fill = NULL)
   leg <- get_legend(temp)
-plot_maps <-   plot_grid(p1, p2, labels = c("Simulated crime","Police recorded crime"),
-            scale = 0.9, label_fontface = "plain")
-plot_grid(plot_maps, leg, nrow = 2, rel_heights = c(10,1))
+  plot_maps <-   plot_grid(p1, p2, labels = c("Simulated all crime","Simulated crime known to police"),
+                           scale = 0.9, label_fontface = "plain")
+  plot_grid(plot_maps, leg, nrow = 2, rel_heights = c(10,1))
 }
 
 # Plot and save OA.
-temp <- map_fun(oa_compare_all_sf)
+temp <- oa_map_fun(oa_compare_all_sf)
 ggsave(plot = temp, filename = "visuals/map_comaprison_oa.png", height = 24, width = 24, unit = "cm")
+
+# MSOA ===
+# Filter for all crimes and make spatial again.
+msoa_compare_all_sf <- msoa_compare_df %>% 
+  filter(crime_type == "all_crimes") %>% 
+  st_as_sf(sf_column_name = "geometry")
+
+# Map function.
+msoa_map_fun <- function(x){
+  p1 <- ggplot(data = x) +
+    geom_sf(mapping = aes(fill = all_crimes), colour = "transparent") +
+    theme_minimal() +
+    scale_fill_viridis_c(limits = c(0,10200)) +
+    labs(fill = "") +
+    theme(legend.position = "none") +
+    guides(fill = guide_colorbar(barwidth=10, barheight = 1)) + labs(fill = NULL)
+  p2 <- ggplot(data = x) +
+    geom_sf(mapping = aes(fill = known), colour = "transparent") +
+    theme_minimal() +
+    scale_fill_viridis_c(limits = c(0,10200)) +
+    labs(fill = "") +
+    theme(legend.position = "none") +
+    guides(fill = guide_colorbar(barwidth=10, barheight = 1)) + labs(fill = NULL)
+  temp <- ggplot(data = x) +
+    geom_sf(aes(fill = count)) +
+    scale_fill_viridis_c(limits = c(0,10200)) +
+    theme(legend.position = "bottom") +
+    guides(fill = guide_colorbar(barwidth=20, barheight = 1)) + labs(fill = NULL)
+  leg <- get_legend(temp)
+  plot_maps <-   plot_grid(p1, p2, labels = c("Simulated all crime","Simulated crime known to police"),
+                           scale = 0.9, label_fontface = "plain")
+  plot_grid(plot_maps, leg, nrow = 2, rel_heights = c(10,1))
+}
+
+# Plot and save OA.
+temp <- msoa_map_fun(msoa_compare_all_sf)
+ggsave(plot = temp, filename = "visuals/map_comaprison_msoa.png", height = 24, width = 24, unit = "cm")
+
 
 # Compute correlations between crimes known to police (simulated data) and crime recorded by GMP (direct aggregates).
 cor_oa_df <- oa_compare_df %>% 
