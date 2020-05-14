@@ -650,6 +650,22 @@ full_plot <- plot_grid(plotlist = boxplot_list, nrow = 3, ncol = 2, labels = c("
 # Save full plot.
 ggsave(plot = full_plot, filename = "visuals/full_boxplot.png", height = 14, width = 8)
 
+# New grouped plot 14.05.20.
+rd_stats_df <- bind_rows(rd_stats_list, .id = "crime_type")
+
+full_plot_group <- ggplot(data = rd_stats_df) +
+  theme_bw() +
+  geom_boxplot(mapping = aes(x = crime_type,  y = abs_RD, fill = unit_type), colour = "black", size = 0.5) +
+  labs(y = "RD", x = "", fill = "") +
+  scale_fill_viridis_d(alpha = 0.7) +
+  scale_x_discrete(labels = c("All crime","Residence","Theft","Vehicle","Violent")) + 
+  theme(legend.position = "top",
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 14))
+
+# Save full grouped plot
+ggsave(plot = full_plot_group, filename = "visuals/full_boxplot_grouped.png", height = 10, width = 12)
+
 # Function to calculate ARB stats for each crime type.
 ARB_fun <- function(x){
   x %>%
@@ -797,12 +813,6 @@ msoa_compare_df <- bind_rows(msoa_compare_list, .id = "crime_type")
 ward_compare_df <- bind_rows(ward_compare_list, .id = "crime_type")
 
 
-
-
-
-
-
-
 # Aggregate crime data without searching points in polygons.
 # At the Output Area level.
 oa_agg <- GMP_manc %>%
@@ -886,6 +896,34 @@ msoa_compare_df <- msoa_compare_df %>%
   replace(is.na(.), 0)
 ward_compare_df <- ward_compare_df %>%
   full_join(wd_agg, by = c("crime_type", "unit"))
+
+# Map comparisons 14.05.20.
+# Join spatial data back in.
+oa_compare_all_df <- filter(oa_compare_df, crime_type == "all_crimes")
+oa_compare_sf <- left_join(oa_sf, oa_compare_all_df, by = c("code" = "unit"))
+
+# Map function.
+map_fun <- function(x){
+  p1 <- ggplot(data = x) +
+    geom_sf(mapping = aes(fill = count), colour = "transparent") +
+    scale_fill_viridis_c() +
+    theme_minimal() +
+    labs(fill = "") +
+    theme(legend.position = "bottom") 
+  p2 <- ggplot(data = x) +
+    geom_sf(mapping = aes(fill = all_crimes), colour = "transparent") +
+    scale_fill_viridis_c() +
+    theme_minimal() +
+    labs(fill = "") +
+    theme(legend.position = "bottom") 
+  plot_grid(p1, p2, labels = c("Police recorded crime", "Simulated crime"), scale = 0.9)
+}
+
+
+# Test.
+map_fun(oa_compare_sf)
+
+
 
 # Compute correlations between crimes known to police (simulated data) and crime recorded by GMP (direct aggregates).
 cor_oa_df <- oa_compare_df %>% 
