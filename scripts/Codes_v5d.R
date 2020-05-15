@@ -903,7 +903,7 @@ ward_compare_df <- ward_compare_df %>%
 # Map comparisons 14.05.20.
 # OA ===
 # Create breaks, filter for all crimes and make spatial again.
-all_crimes_brks <-  classIntervals(oa_compare_df$all_crimes, n = 8, style = "quantile")
+all_crimes_brks <-  classIntervals(oa_compare_df$all_crimes, n = 6, style = "quantile")
 # known_brks      <-  classIntervals(oa_compare_df$known, n = 5, style = "sd")
 
 mean(oa_compare_df$all_crimes)
@@ -951,7 +951,7 @@ ggsave(plot = temp, filename = "visuals/map_comaprison_oa.png", height = 24, wid
 
 # MSOA ===
 # Create breaks, filter for all crimes and make spatial again.
-all_crimes_brks <-  classIntervals(msoa_compare_df$all_crimes, n = 8, style = "quantile")
+all_crimes_brks <-  classIntervals(msoa_compare_df$all_crimes, n = 6, style = "quantile")
 # known_brks      <-  classIntervals(oa_compare_df$known, n = 5, style = "sd")
 
 mean(oa_compare_df$all_crimes)
