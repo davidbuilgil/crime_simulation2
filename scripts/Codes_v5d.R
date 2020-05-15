@@ -14,7 +14,7 @@ rm(list = ls())
 packages <- c("cowplot", "purrr"    , "devtools", "maptools",
               "spdep"  , "DescTools", "MASS"    , "haven"   , 
               "here"   , "readr"    , "dplyr"   , "tidyr"   , 
-              "forcats", "ggplot2"  , "sf")
+              "forcats", "ggplot2"  , "sf"      , "classInt")
 
 lapply(packages, require, character.only = TRUE)
 
@@ -902,32 +902,43 @@ ward_compare_df <- ward_compare_df %>%
 
 # Map comparisons 14.05.20.
 # OA ===
-# Filter for all crimes and make spatial again.
+# Create breaks, filter for all crimes and make spatial again.
+all_crimes_brks <-  classIntervals(oa_compare_df$all_crimes, n = 8, style = "quantile")
+# known_brks      <-  classIntervals(oa_compare_df$known, n = 5, style = "sd")
+
+mean(oa_compare_df$all_crimes)
+# mean(oa_compare_df$known)
+all_crimes_brks$brks
+# known_brks$brks
+
 oa_compare_all_sf <- oa_compare_df %>% 
   filter(crime_type == "all_crimes") %>% 
-  st_as_sf(sf_column_name = "geometry")
+  st_as_sf(sf_column_name = "geometry") %>% 
+  mutate(all_crimes_cut = cut(all_crimes, all_crimes_brks$brks, include.lowest = T),
+         known_cut      = cut(known, all_crimes_brks$brks, include.lowest = T))
 
 # Map function.
 oa_map_fun <- function(x){
   p1 <- ggplot(data = x) +
-    geom_sf(mapping = aes(fill = all_crimes), colour = "transparent") +
+    geom_sf(mapping = aes(fill = all_crimes_cut), colour = "transparent") +
     theme_minimal() +
-    scale_fill_viridis_c(limits = c(0,1700)) +
+    scale_fill_viridis_d(alpha = 0.9) +
     labs(fill = "") +
-    theme(legend.position = "none") +
-    guides(fill = guide_colorbar(barwidth=10, barheight = 1)) + labs(fill = NULL)
+    theme(legend.position = "none") #+
+    # guides(fill = guide_colorbar(barwidth=10, barheight = 1)) + labs(fill = NULL)
   p2 <- ggplot(data = x) +
-    geom_sf(mapping = aes(fill = known), colour = "transparent") +
+    geom_sf(mapping = aes(fill = known_cut), colour = "transparent") +
     theme_minimal() +
-    scale_fill_viridis_c(limits = c(0,1700)) +
+    scale_fill_viridis_d(alpha = 0.9) +
     labs(fill = "") +
-    theme(legend.position = "none") +
-    guides(fill = guide_colorbar(barwidth=10, barheight = 1)) + labs(fill = NULL)
+    theme(legend.position = "none")# +
+    # guides(fill = guide_colorbar(barwidth=10, barheight = 1)) + labs(fill = NULL)
   temp <- ggplot(data = x) +
-    geom_sf(aes(fill = count)) +
-    scale_fill_viridis_c(limits = c(0,1700)) +
-    theme(legend.position = "bottom") +
-    guides(fill = guide_colorbar(barwidth=20, barheight = 1)) + labs(fill = NULL)
+    geom_sf(aes(fill = known_cut)) +
+    scale_fill_viridis_d(alpha = 0.9) +
+    labs(fill = "") +
+    theme(legend.position = "bottom") #+
+    # guides(fill = guide_colorbar(barwidth=20, barheight = 1)) + labs(fill = NULL)
   leg <- get_legend(temp)
   plot_maps <-   plot_grid(p1, p2, labels = c("Simulated all crime","Simulated crime known to police"),
                            scale = 0.9, label_fontface = "plain")
@@ -939,32 +950,43 @@ temp <- oa_map_fun(oa_compare_all_sf)
 ggsave(plot = temp, filename = "visuals/map_comaprison_oa.png", height = 24, width = 24, unit = "cm")
 
 # MSOA ===
-# Filter for all crimes and make spatial again.
+# Create breaks, filter for all crimes and make spatial again.
+all_crimes_brks <-  classIntervals(msoa_compare_df$all_crimes, n = 8, style = "quantile")
+# known_brks      <-  classIntervals(oa_compare_df$known, n = 5, style = "sd")
+
+mean(oa_compare_df$all_crimes)
+# mean(oa_compare_df$known)
+all_crimes_brks$brks
+# known_brks$brks
+
 msoa_compare_all_sf <- msoa_compare_df %>% 
   filter(crime_type == "all_crimes") %>% 
-  st_as_sf(sf_column_name = "geometry")
+  st_as_sf(sf_column_name = "geometry") %>% 
+  mutate(all_crimes_cut = cut(all_crimes, all_crimes_brks$brks, include.lowest = T),
+         known_cut      = cut(known, all_crimes_brks$brks, include.lowest = T))
 
 # Map function.
 msoa_map_fun <- function(x){
   p1 <- ggplot(data = x) +
-    geom_sf(mapping = aes(fill = all_crimes), colour = "transparent") +
+    geom_sf(mapping = aes(fill = all_crimes_cut), colour = "transparent") +
     theme_minimal() +
-    scale_fill_viridis_c(limits = c(0,10200)) +
+    scale_fill_viridis_d(alpha = 0.9) +
     labs(fill = "") +
-    theme(legend.position = "none") +
-    guides(fill = guide_colorbar(barwidth=10, barheight = 1)) + labs(fill = NULL)
+    theme(legend.position = "none") #+
+    # guides(fill = guide_colorbar(barwidth=10, barheight = 1)) + labs(fill = NULL)
   p2 <- ggplot(data = x) +
-    geom_sf(mapping = aes(fill = known), colour = "transparent") +
+    geom_sf(mapping = aes(fill = known_cut), colour = "transparent") +
     theme_minimal() +
-    scale_fill_viridis_c(limits = c(0,10200)) +
+    scale_fill_viridis_d(alpha = 0.9) +
     labs(fill = "") +
-    theme(legend.position = "none") +
-    guides(fill = guide_colorbar(barwidth=10, barheight = 1)) + labs(fill = NULL)
+    theme(legend.position = "none")# +
+    # guides(fill = guide_colorbar(barwidth=10, barheight = 1)) + labs(fill = NULL)
   temp <- ggplot(data = x) +
-    geom_sf(aes(fill = count)) +
-    scale_fill_viridis_c(limits = c(0,10200)) +
-    theme(legend.position = "bottom") +
-    guides(fill = guide_colorbar(barwidth=20, barheight = 1)) + labs(fill = NULL)
+    geom_sf(aes(fill = known_cut)) +
+    scale_fill_viridis_d(alpha = 0.9) +
+    labs(fill = "") +
+    theme(legend.position = "bottom")# +
+    # guides(fill = guide_colorbar(barwidth=20, barheight = 1)) + labs(fill = NULL)
   leg <- get_legend(temp)
   plot_maps <-   plot_grid(p1, p2, labels = c("Simulated all crime","Simulated crime known to police"),
                            scale = 0.9, label_fontface = "plain")
