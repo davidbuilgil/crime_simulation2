@@ -626,15 +626,15 @@ rd_stats_list <- lapply(rd_stats_list, function(x){filter(x, unit_type != "LAD")
 
 # Plot function
 plot_fun <- function(x){
-ggplot(data = x) +
-  theme_bw() +
-  geom_boxplot(mapping = aes(x = unit_type,  y = abs_RD, fill = unit_type), colour = "black") +
-  labs(y = "RD", x = "") +
-  scale_fill_viridis_d(alpha = 0.7) +
-  scale_x_discrete(labels = c("OA","LSOA","MSOA","Ward")) + 
-  theme(legend.position = "none",
-        axis.title = element_text(size = 12),
-        axis.text = element_text(size = 12))
+  ggplot(data = x) +
+    theme_bw() +
+    geom_boxplot(mapping = aes(x = unit_type,  y = abs_RD, fill = unit_type), colour = "black") +
+    labs(y = "RD", x = "") +
+    scale_fill_grey() +
+    scale_x_discrete(labels = c("OA","LSOA","MSOA","Ward")) + 
+    theme(legend.position = "none",
+          axis.title = element_text(size = 12),
+          axis.text = element_text(size = 12))
 }
 
 # Run function through list
@@ -658,7 +658,7 @@ full_plot_group <- ggplot(data = rd_stats_df) +
   geom_boxplot(mapping = aes(x = crime_type,  y = abs_RD, fill = unit_type), colour = "black", size = 0.5,
                position=position_dodge(width=1), width = 0.9) +
   labs(y = "RD", x = "", fill = "") +
-  scale_fill_viridis_d(alpha = 0.7) +
+  scale_fill_grey() +
   scale_x_discrete(labels = c("All crime","Residence","Theft","Vehicle","Violent")) + 
   theme(legend.position = "top",
         axis.title = element_text(size = 14),
@@ -902,29 +902,32 @@ ward_compare_df <- ward_compare_df %>%
 # Map comparisons 14.05.20.
 # OA ===
 # Create breaks, filter for all crimes and make spatial again.
-all_crimes_brks <-  classIntervals(oa_compare_df$all_crimes, n = 5, style = "quantile")
-known_brks      <-  classIntervals(oa_compare_df$known, n = 5, style = "quantile")
+oa_compare_map <- oa_compare_df %>%
+  filter(crime_type == "theft")
 
-oa_compare_all_sf <- oa_compare_df %>% 
-  filter(crime_type == "all_crimes") %>% 
+all_crimes_brks <-  classIntervals(oa_compare_map$all_crimes, n = 4, style = "quantile")
+known_brks      <-  classIntervals(oa_compare_map$known, n = 4, style = "quantile")
+
+oa_compare_map_sf <- oa_compare_map %>% 
+  filter(crime_type == "theft") %>% 
   st_as_sf(sf_column_name = "geometry") %>% 
   mutate(all_crimes_cut = cut(all_crimes, all_crimes_brks$brks, include.lowest = T, dig.lab = 5),
          known_cut      = cut(known     , known_brks$brks     , include.lowest = T, dig.lab = 5))
 
-table(oa_compare_all_sf$all_crimes_cut)
+table(oa_compare_map_sf$all_crimes_cut)
 
 # Map function.
 oa_map_fun <- function(x){
   p1 <- ggplot(data = x) +
     geom_sf(mapping = aes(fill = all_crimes_cut), colour = "transparent") +
     theme_minimal() +
-    scale_fill_viridis_d(alpha = 0.9) +
+    scale_fill_grey(start=0.8, end=0.2) +
     labs(fill = "") +
     theme(legend.position = "bottom")
   p2 <- ggplot(data = x) +
     geom_sf(mapping = aes(fill = known_cut), colour = "transparent") +
     theme_minimal() +
-    scale_fill_viridis_d(alpha = 0.9) +
+    scale_fill_grey(start=0.8, end=0.2) +
     labs(fill = "") +
     theme(legend.position = "bottom")
   # temp <- ggplot(data = x) +
@@ -932,92 +935,104 @@ oa_map_fun <- function(x){
   #   scale_fill_viridis_d(alpha = 0.9) +
   #   labs(fill = "") +
   #   theme(legend.position = "bottom") #+
-    # guides(fill = guide_colorbar(barwidth=20, barheight = 1)) + labs(fill = NULL)
+  # guides(fill = guide_colorbar(barwidth=20, barheight = 1)) + labs(fill = NULL)
   # leg <- get_legend(temp)
   # plot_maps <-   plot_grid(p1, p2, labels = c("Simulated all crime","Simulated crime known to police"),
   #                          scale = 0.9, label_fontface = "plain")
   # plot_grid(plot_maps, leg, nrow = 2, rel_heights = c(10,1))
-plot_grid(p1, p2, nrow = 1, labels = c("Simulated all crime","Simulated crime known to police"))
+  plot_grid(p1, p2, nrow = 1, labels = c("All crime (synthetic data)","Known to police (synthetic data)"))
 }
 
 # Plot and save OA.
-temp <- oa_map_fun(oa_compare_all_sf)
+temp <- oa_map_fun(oa_compare_map_sf)
 ggsave(plot = temp, filename = "visuals/map_comaprison_oa.png", height = 24, width = 24, unit = "cm")
 
 # MSOA ===
 # Create breaks, filter for all crimes and make spatial again.
-all_crimes_brks <-  classIntervals(msoa_compare_df$all_crimes, n = 5, style = "quantile")
-known_brks      <-  classIntervals(msoa_compare_df$known, n = 5, style = "quantile")
+msoa_compare_map <- msoa_compare_df %>%
+  filter(crime_type == "theft")
 
-msoa_compare_all_sf <- msoa_compare_df %>% 
-  filter(crime_type == "all_crimes") %>% 
+all_crimes_brks <-  classIntervals(msoa_compare_map$all_crimes, n = 4, style = "quantile")
+known_brks      <-  classIntervals(msoa_compare_map$known, n = 4, style = "quantile")
+
+msoa_compare_map_sf <- msoa_compare_map %>% 
+  filter(crime_type == "theft") %>% 
   st_as_sf(sf_column_name = "geometry") %>% 
   mutate(all_crimes_cut = cut(all_crimes, all_crimes_brks$brks, include.lowest = T, dig.lab = 5),
          known_cut      = cut(known     , known_brks$brks     , include.lowest = T, dig.lab = 5))
+
+table(msoa_compare_map_sf$all_crimes_cut)
 
 # Map function.
 msoa_map_fun <- function(x){
   p1 <- ggplot(data = x) +
     geom_sf(mapping = aes(fill = all_crimes_cut), colour = "transparent") +
     theme_minimal() +
-    scale_fill_viridis_d(alpha = 0.9) +
+    scale_fill_grey(start=0.8, end=0.2) +
     labs(fill = "") +
     theme(legend.position = "bottom") 
   p2 <- ggplot(data = x) +
     geom_sf(mapping = aes(fill = known_cut), colour = "transparent") +
     theme_minimal() +
-    scale_fill_viridis_d(alpha = 0.9) +
+    scale_fill_grey(start=0.8, end=0.2) +
     labs(fill = "") +
     theme(legend.position = "bottom")
-plot_grid(p1, p2, nrow = 1, labels = c("Simulated all crime","Simulated crime known to police"))
+plot_grid(p1, p2, nrow = 1, labels = c("All crime (synthetic data)","Known to police (synthetic data)"))
 }
 
 # Plot and save MSOA.
-temp <- msoa_map_fun(msoa_compare_all_sf)
+temp <- msoa_map_fun(msoa_compare_map_sf)
 ggsave(plot = temp, filename = "visuals/map_comaprison_msoa.png", height = 24, width = 24, unit = "cm")
-
 
 # Compute correlations between crimes known to police (simulated data) and crime recorded by GMP (direct aggregates).
 cor_oa_df <- oa_compare_df %>% 
   group_by(crime_type) %>%
   summarise(corr = cor.test(known, GMP_agg, method = "spearman")$estimate,
             p    = cor.test(known, GMP_agg, method = "spearman")$p.value)
+cor_oa_df
 
 cor_lsoa_df <- lsoa_compare_df %>% 
   group_by(crime_type) %>%
   summarise(corr = cor.test(known, GMP_agg, method = "spearman")$estimate,
             p    = cor.test(known, GMP_agg, method = "spearman")$p.value)
+cor_lsoa_df
 
 cor_msoa_df <- msoa_compare_df %>% 
   group_by(crime_type) %>%
   summarise(corr = cor.test(known, GMP_agg, method = "spearman")$estimate,
             p    = cor.test(known, GMP_agg, method = "spearman")$p.value)
+cor_msoa_df
 
 cor_ward_df <- ward_compare_df %>% 
   group_by(crime_type) %>%
   summarise(corr = cor.test(known, GMP_agg, method = "spearman")$estimate,
             p    = cor.test(known, GMP_agg, method = "spearman")$p.value)
+cor_ward_df
 
 # Compute correlations between crimes known to police (simulated data) and crime recorded by GMP (points in polygons).
 cor_oa_df <- oa_compare_df %>% 
   group_by(crime_type) %>%
   summarise(corr = cor.test(known, count, method = "spearman")$estimate,
             p    = cor.test(known, count, method = "spearman")$p.value)
+cor_oa_df
 
 cor_lsoa_df <- lsoa_compare_df %>% 
   group_by(crime_type) %>%
   summarise(corr = cor.test(known, count, method = "spearman")$estimate,
             p    = cor.test(known, count, method = "spearman")$p.value)
+cor_lsoa_df
 
 cor_msoa_df <- msoa_compare_df %>% 
   group_by(crime_type) %>%
   summarise(corr = cor.test(known, count, method = "spearman")$estimate,
             p    = cor.test(known, count, method = "spearman")$p.value)
+cor_msoa_df
 
 cor_ward_df <- ward_compare_df %>% 
   group_by(crime_type) %>%
   summarise(corr = cor.test(known, count, method = "spearman")$estimate,
             p    = cor.test(known, count, method = "spearman")$p.value)
+cor_ward_df
 
 # Regain spatial attributes.
 oa_compare_sf_list   <- lapply(oa_compare_list  , function(x) st_as_sf(x))
@@ -1050,6 +1065,7 @@ mi_oa_df <- oa_compare_df %>%
   summarise(mi   = lm.morantest.exact(lm(known ~ count), oa_prox)$estimate,
             stat = lm.morantest.exact(lm(known ~ count), oa_prox)$statistic,
             p    = lm.morantest.exact(lm(known ~ count), oa_prox)$p.value)
+mi_oa_df
 
 mi_oa_df <- oa_compare_df %>%
   group_by(crime_type) %>%
@@ -1062,6 +1078,7 @@ mi_lsoa_df <- lsoa_compare_df %>%
   summarise(mi   = lm.morantest.exact(lm(known ~ count), lsoa_prox)$estimate,
             stat = lm.morantest.exact(lm(known ~ count), lsoa_prox)$statistic,
             p    = lm.morantest.exact(lm(known ~ count), lsoa_prox)$p.value)
+mi_lsoa_df
 
 mi_lsoa_df <- lsoa_compare_df %>%
   group_by(crime_type) %>%
@@ -1074,6 +1091,7 @@ mi_msoa_df <- msoa_compare_df %>%
   summarise(mi   = lm.morantest.exact(lm(known ~ count), msoa_prox)$estimate,
             stat = lm.morantest.exact(lm(known ~ count), msoa_prox)$statistic,
             p    = lm.morantest.exact(lm(known ~ count), msoa_prox)$p.value)
+mi_msoa_df
 
 mi_msoa_df <- msoa_compare_df %>%
   group_by(crime_type) %>%
@@ -1086,6 +1104,7 @@ mi_ward_df <- ward_compare_df %>%
   summarise(mi   = lm.morantest.exact(lm(known ~ count), ward_prox)$estimate,
             stat = lm.morantest.exact(lm(known ~ count), ward_prox)$statistic,
             p    = lm.morantest.exact(lm(known ~ count), ward_prox)$p.value)
+mi_ward_df
 
 mi_ward_df <- ward_compare_df %>%
   group_by(crime_type) %>%
