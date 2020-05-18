@@ -610,11 +610,11 @@ rd_stats_list <- lapply(units_list, rd_fun)
 desc_fun <- function(x){
   x %>% 
     group_by(unit_type) %>% 
-    summarise(mean_RD    = mean(RD),
-              min_RD     = min(RD),
-              max_RD     = max(RD),
-              var_RD     = var(RD),
-              sd_RD      = sd(RD),
+    summarise(mean_RD    = mean(abs_RD),
+              min_RD     = min(abs_RD),
+              max_RD     = max(abs_RD),
+              var_RD     = var(abs_RD),
+              sd_RD      = sd(abs_RD),
               med_abs_RD = median(abs_RD))
 }
 
@@ -672,14 +672,13 @@ ggsave(plot = full_plot_group, filename = "visuals/full_boxplot_grouped.png", he
 # Function to calculate ARB stats for each crime type.
 ARB_fun <- function(x){
   x %>%
-    mutate(RB  = ((all_crimes / known)-1),
-           ARB = abs(RB)) %>% 
+    mutate(RB  = ((all_crimes / known)-1) * 100) %>% 
     group_by(unit_type) %>% 
-    summarise(mean_ARB    = mean(ARB),
-              min_ARB     = min(ARB),
-              max_ARB     = max(ARB),
-              var_ARB     = var(ARB),
-              sd_ARB      = sd(ARB))
+    summarise(mean_RB    = mean(RB),
+              min_RB     = min(RB),
+              max_RB     = max(RB),
+              var_RB     = var(RB),
+              sd_RB      = sd(RB))
 }
 
 # Print stats.
