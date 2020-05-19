@@ -965,7 +965,7 @@ map_fun <- function(x){
   p2 <- ggplot(data = lsoa_levels_sf) +
     geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
     theme_minimal() +
-    scale_fill_grey(start=0.8, end=0.2) +
+    scale_fill_grey(start=0.5, end=0.35) +
     labs(fill = "") +
     theme(legend.position = "bottom", 
           axis.text.x = element_blank(),
@@ -973,7 +973,7 @@ map_fun <- function(x){
   p3 <- ggplot(data = msoa_levels_sf) +
     geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
     theme_minimal() +
-    scale_fill_grey(start=0.8, end=0.2) +
+    scale_fill_grey(start=0.5, end=0.35) +
     labs(fill = "") +
     theme(legend.position = "bottom", 
           axis.text.x = element_blank(),
@@ -981,7 +981,7 @@ map_fun <- function(x){
   p4 <- ggplot(data = ward_levels_sf) +
     geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
     theme_minimal() +
-    scale_fill_grey(start=0.8, end=0.2) +
+    scale_fill_grey(start=0.5, end=0.35) +
     labs(fill = "") +
     theme(legend.position = "bottom", 
           axis.text.x = element_blank(),
