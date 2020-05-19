@@ -959,25 +959,33 @@ map_fun <- function(x){
     theme_minimal() +
     scale_fill_grey(start=0.8, end=0.2) +
     labs(fill = "") +
-    theme(legend.position = "bottom")
+    theme(legend.position = "bottom", 
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank())
   p2 <- ggplot(data = lsoa_levels_sf) +
     geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
     theme_minimal() +
     scale_fill_grey(start=0.8, end=0.2) +
     labs(fill = "") +
-    theme(legend.position = "bottom")
+    theme(legend.position = "bottom", 
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank())
   p3 <- ggplot(data = msoa_levels_sf) +
     geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
     theme_minimal() +
     scale_fill_grey(start=0.8, end=0.2) +
     labs(fill = "") +
-    theme(legend.position = "bottom")
+    theme(legend.position = "bottom", 
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank())
   p4 <- ggplot(data = ward_levels_sf) +
     geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
     theme_minimal() +
     scale_fill_grey(start=0.8, end=0.2) +
     labs(fill = "") +
-    theme(legend.position = "bottom")
+    theme(legend.position = "bottom", 
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank())
   plot_grid(p1, p2, p3, p4, nrow = 2, labels = c("Output areas (RD%)","LSOAs (RD%)", "MSOAs (RD%)", "Wards (RD%)"))
 }
 
