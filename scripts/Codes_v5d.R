@@ -899,6 +899,92 @@ msoa_compare_df <- msoa_compare_df %>%
 ward_compare_df <- ward_compare_df %>%
   full_join(wd_agg, by = c("crime_type", "unit"))
 
+# Map RD across all scales 19.05.2020 David
+oa_levels_df <- oa_compare_df %>%
+  mutate(RD = ((known - all_crimes) / all_crimes) * 100,
+         abs_RD = abs(RD)) %>%
+  filter(crime_type == "theft")
+
+lsoa_levels_df <- lsoa_compare_df %>%
+  mutate(RD = ((known - all_crimes) / all_crimes) * 100,
+         abs_RD = abs(RD)) %>%
+  filter(crime_type == "theft")
+
+msoa_levels_df <- msoa_compare_df %>%
+  mutate(RD = ((known - all_crimes) / all_crimes) * 100,
+         abs_RD = abs(RD)) %>%
+  filter(crime_type == "theft")
+
+ward_levels_df <- ward_compare_df %>%
+  mutate(RD = ((known - all_crimes) / all_crimes) * 100,
+         abs_RD = abs(RD)) %>%
+  filter(crime_type == "theft")
+
+oa_brks <- classIntervals(oa_levels_df$abs_RD, n = 5, style="fixed",
+                          fixedBreaks = c(0, 20, 40, 60, 80, 100))
+
+lsoa_brks <- classIntervals(lsoa_levels_df$abs_RD, n = 5, style="fixed",
+                          fixedBreaks = c(0, 20, 40, 60, 80, 100))
+
+msoa_brks <- classIntervals(msoa_levels_df$abs_RD, n = 5, style="fixed",
+                            fixedBreaks = c(0, 20, 40, 60, 80, 100))
+
+ward_brks <- classIntervals(ward_levels_df$abs_RD, n = 5, style="fixed",
+                            fixedBreaks = c(0, 20, 40, 60, 80, 100))
+
+oa_levels_sf <- oa_levels_df %>% 
+  st_as_sf(sf_column_name = "geometry") %>% 
+  mutate(RD_cut = cut(abs_RD, oa_brks$brks, include.lowest = T, dig.lab = 5)) %>%
+  filter(!(is.na(abs_RD)))
+table(oa_levels_sf$RD_cut)
+
+lsoa_levels_sf <- lsoa_levels_df %>% 
+  st_as_sf(sf_column_name = "geometry") %>% 
+  mutate(RD_cut = cut(abs_RD, lsoa_brks$brks, include.lowest = T, dig.lab = 5))
+table(lsoa_levels_sf$RD_cut)
+
+msoa_levels_sf <- msoa_levels_df %>% 
+  st_as_sf(sf_column_name = "geometry") %>% 
+  mutate(RD_cut = cut(abs_RD, msoa_brks$brks, include.lowest = T, dig.lab = 5))
+table(msoa_levels_sf$RD_cut)
+
+ward_levels_sf <- ward_levels_df %>% 
+  st_as_sf(sf_column_name = "geometry") %>% 
+  mutate(RD_cut = cut(abs_RD, ward_brks$brks, include.lowest = T, dig.lab = 5))
+table(ward_levels_sf$RD_cut)
+
+map_fun <- function(x){
+  p1 <- ggplot(data = oa_levels_sf) +
+    geom_sf(mapping = aes(fill = RD_cut), colour = "darkgrey") +
+    theme_minimal() +
+    scale_fill_grey(start=0.8, end=0.2) +
+    labs(fill = "") +
+    theme(legend.position = "bottom")
+  p2 <- ggplot(data = lsoa_levels_sf) +
+    geom_sf(mapping = aes(fill = RD_cut), colour = "darkgrey") +
+    theme_minimal() +
+    scale_fill_grey(start=0.8, end=0.2) +
+    labs(fill = "") +
+    theme(legend.position = "bottom")
+  p3 <- ggplot(data = msoa_levels_sf) +
+    geom_sf(mapping = aes(fill = RD_cut), colour = "darkgrey") +
+    theme_minimal() +
+    scale_fill_grey(start=0.8, end=0.2) +
+    labs(fill = "") +
+    theme(legend.position = "bottom")
+  p4 <- ggplot(data = ward_levels_sf) +
+    geom_sf(mapping = aes(fill = RD_cut), colour = "darkgrey") +
+    theme_minimal() +
+    scale_fill_grey(start=0.8, end=0.2) +
+    labs(fill = "") +
+    theme(legend.position = "bottom")
+  plot_grid(p1, p2, p3, p4, nrow = 2, labels = c("Output areas (RD%)","LSOAs (RD%)", "MSOAs (RD%)", "Wards (RD%)"))
+}
+
+temp <- map_fun()
+ggsave(plot = temp, filename = "visuals/map_comaprison_RD.png", height = 24, width = 24, unit = "cm")
+
+
 # Map comparisons 14.05.20.
 # OA ===
 # Create breaks, filter for all crimes and make spatial again.
