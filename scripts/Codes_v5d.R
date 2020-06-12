@@ -144,19 +144,23 @@ csew <- csew %>%
 
 model_vehicle <- glm.nb(vehicle ~ age + sex + reseth + remploy + educat2, data = csew)
 summary(model_vehicle)
-PseudoR2(model_vehicle)
+#PseudoR2(model_vehicle)
+rsq.n(model_vehicle)
 
 model_residence <- glm.nb(residence ~ age + sex + reseth + remploy + educat2, data = csew)
 summary(model_residence)
-PseudoR2(model_residence)
+#PseudoR2(model_residence)
+rsq.n(model_residence)
 
 model_theft <- glm.nb(theft ~ age + sex + reseth + remploy + educat2, data = csew)
 summary(model_theft)
-PseudoR2(model_theft)
+#PseudoR2(model_theft)
+rsq.n(model_theft)
 
 model_violence <- glm.nb(violence ~ age + sex + reseth + remploy + educat2, data = csew)
 summary(model_violence)
-PseudoR2(model_violence)
+#PseudoR2(model_violence)
+rsq.n(model_violence)
 
 model_all_crimes <- glm.nb(all_crimes ~ age + sex + reseth + remploy + educat2, data = csew)
 summary(model_all_crimes)
@@ -300,22 +304,26 @@ glm_copsknow <- copsknow ~ age + sex + reseth + remploy + educat2
 # Vehicle model.
 model_repo_vehicle <- glm(formula = glm_copsknow, family = binomial(link = "logit"), data = csew_vf_vehicle)
 summary(model_repo_vehicle)
-PseudoR2(model_repo_vehicle)
+#PseudoR2(model_repo_vehicle)
+rsq.n(model_repo_vehicle)
 
 # Residence model.
 model_repo_residence <- glm(formula = glm_copsknow, family = binomial(link = "logit"), data = csew_vf_residence)
 summary(model_repo_residence)
-PseudoR2(model_repo_residence)
+#PseudoR2(model_repo_residence)
+rsq.n(model_repo_residence)
 
 # Theft model.
 model_repo_theft <- glm(formula = glm_copsknow, family = binomial(link = "logit"), data = csew_vf_theft)
 summary(model_repo_theft)
-PseudoR2(model_repo_theft)
+#PseudoR2(model_repo_theft)
+rsq.n(model_repo_theft)
 
 # Violence model.
 model_repo_violence <- glm(formula = glm_copsknow, family = binomial(link = "logit"), data = csew_vf_violence)
 summary(model_repo_violence)
-PseudoR2(model_repo_vehicle)
+#PseudoR2(model_repo_vehicle)
+rsq.n(model_repo_vehicle)
 
 # Extract estimates for vehicle crime.
 Data_vehicle <- Data_vehicle %>% 
@@ -383,22 +391,26 @@ glm_victarea <- victarea ~ age + sex + reseth + remploy + educat2
 # Vehicle model.
 model_area_vehicle <- glm(formula = glm_victarea, family = binomial(link = "logit"), data = csew_vf_vehicle)
 summary(model_area_vehicle)
-PseudoR2(model_area_vehicle)
+#PseudoR2(model_area_vehicle)
+rsq.n(model_area_vehicle)
 
 # Residence model.
 model_area_residence <- glm(formula = glm_victarea, family = binomial(link = "logit"), data = csew_vf_residence)
 summary(model_area_residence)
-PseudoR2(model_area_residence)
+#PseudoR2(model_area_residence)
+rsq.n(model_area_residence)
 
 # Theft model.
 model_area_theft <- glm(formula = glm_victarea, family = binomial(link = "logit"), data = csew_vf_theft)
 summary(model_area_theft)
-PseudoR2(model_area_theft)
+#PseudoR2(model_area_theft)
+rsq.n(model_area_theft)
 
 # Violence model.
 model_area_violence <- glm(formula = glm_victarea, family = binomial(link = "logit"), data = csew_vf_violence)
 summary(model_area_violence)
-PseudoR2(model_area_vehicle)
+#PseudoR2(model_area_violence)
+rsq.n(model_area_violence)
 
 # Extract estimates for vehicle crime.
 Data_vehicle <- Data_vehicle %>% 
