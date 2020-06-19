@@ -14,7 +14,8 @@ rm(list = ls())
 packages <- c("cowplot", "purrr"    , "devtools", "maptools",
               "spdep"  , "DescTools", "MASS"    , "haven"   , 
               "here"   , "readr"    , "dplyr"   , "tidyr"   , 
-              "forcats", "ggplot2"  , "sf"      , "classInt")
+              "forcats", "ggplot2"  , "sf"      , "classInt",
+              "rsq"    , "scales")
 
 lapply(packages, require, character.only = TRUE)
 
@@ -932,6 +933,13 @@ ward_levels_df <- ward_compare_df %>%
          abs_RD = abs(RD)) %>%
   filter(crime_type == "theft")
 
+# Check missings
+sum(is.na(oa_levels_df$abs_RD)) # This is an OA that that zero crimes (real and simulated).
+sum(is.na(lsoa_levels_df$abs_RD))
+sum(is.na(msoa_levels_df$abs_RD))
+sum(is.na(ward_levels_df$abs_RD))
+
+# Calculate breaks (note this omits the missing at OA-level).
 oa_brks <- classIntervals(oa_levels_df$abs_RD, n = 5, style="fixed",
                           fixedBreaks = c(0, 20, 40, 60, 80, 100))
 
@@ -945,65 +953,77 @@ ward_brks <- classIntervals(ward_levels_df$abs_RD, n = 5, style="fixed",
                             fixedBreaks = c(0, 20, 40, 60, 80, 100))
 
 oa_levels_sf <- oa_levels_df %>% 
+  drop_na(abs_RD)  %>% # Drop the observation which had no crimes and thus no abs_rd  
   st_as_sf(sf_column_name = "geometry") %>% 
   mutate(RD_cut = cut(abs_RD, oa_brks$brks, include.lowest = T, dig.lab = 5)) %>%
-  filter(!(is.na(abs_RD)))
-table(oa_levels_sf$RD_cut)
+  mutate(RD_cut = fct_recode(RD_cut, "0-20" = "[0,20]", "20-40" = "(20,40]", "40-60" = "(40,60]", "60-80" = "(60,80]", "80-100"="(80,100]"))
 
 lsoa_levels_sf <- lsoa_levels_df %>% 
   st_as_sf(sf_column_name = "geometry") %>% 
-  mutate(RD_cut = cut(abs_RD, lsoa_brks$brks, include.lowest = T, dig.lab = 5))
+  mutate(RD_cut = cut(abs_RD, lsoa_brks$brks, include.lowest = T, dig.lab = 5)) %>% 
+  mutate(RD_cut = fct_recode(RD_cut, "0-20" = "[0,20]", "20-40" = "(20,40]", "40-60" = "(40,60]", "60-80" = "(60,80]", "80-100"="(80,100]"))
 table(lsoa_levels_sf$RD_cut)
 
 msoa_levels_sf <- msoa_levels_df %>% 
   st_as_sf(sf_column_name = "geometry") %>% 
-  mutate(RD_cut = cut(abs_RD, msoa_brks$brks, include.lowest = T, dig.lab = 5))
+  mutate(RD_cut = cut(abs_RD, msoa_brks$brks, include.lowest = T, dig.lab = 5)) %>% 
+  mutate(RD_cut = fct_recode(RD_cut, "0-20" = "[0,20]", "20-40" = "(20,40]", "40-60" = "(40,60]", "60-80" = "(60,80]", "80-100"="(80,100]"))
 table(msoa_levels_sf$RD_cut)
 
 ward_levels_sf <- ward_levels_df %>% 
   st_as_sf(sf_column_name = "geometry") %>% 
-  mutate(RD_cut = cut(abs_RD, ward_brks$brks, include.lowest = T, dig.lab = 5))
+  mutate(RD_cut = cut(abs_RD, ward_brks$brks, include.lowest = T, dig.lab = 5)) %>% 
+  mutate(RD_cut = fct_recode(RD_cut, "0-20" = "[0,20]", "20-40" = "(20,40]", "40-60" = "(40,60]", "60-80" = "(60,80]", "80-100"="(80,100]"))
 table(ward_levels_sf$RD_cut)
 
-map_fun <- function(x){
-  p1 <- ggplot(data = oa_levels_sf) +
-    geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
-    theme_minimal() +
-    scale_fill_grey(start=0.8, end=0.2) +
-    labs(fill = "") +
-    theme(legend.position = "bottom", 
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank())
-  p2 <- ggplot(data = lsoa_levels_sf) +
-    geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
-    theme_minimal() +
-    scale_fill_grey(start=0.5, end=0.35) +
-    labs(fill = "") +
-    theme(legend.position = "bottom", 
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank())
-  p3 <- ggplot(data = msoa_levels_sf) +
-    geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
-    theme_minimal() +
-    scale_fill_grey(start=0.5, end=0.35) +
-    labs(fill = "") +
-    theme(legend.position = "bottom", 
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank())
-  p4 <- ggplot(data = ward_levels_sf) +
-    geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
-    theme_minimal() +
-    scale_fill_grey(start=0.5, end=0.35) +
-    labs(fill = "") +
-    theme(legend.position = "bottom", 
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank())
-  plot_grid(p1, p2, p3, p4, nrow = 2, labels = c("Output areas (RD%)","LSOAs (RD%)", "MSOAs (RD%)", "Wards (RD%)"))
-}
 
-temp <- map_fun()
-ggsave(plot = temp, filename = "visuals/map_comaprison_RD.png", height = 24, width = 24, unit = "cm")
+# Get 5 set colours, avoiding the overly light one, so ask for 6 and get 5.
+greypal <- brewer_pal(palette = "Greys")(6)[2:6] # main
+# "#D9D9D9", "#BDBDBD", "#969696", "#636363", "#252525"
 
+p1 <- ggplot(data = oa_levels_sf) +
+    geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
+    theme_void() +
+    scale_fill_manual(values = greypal) +
+    labs(fill = "RD %", title = "Output area") +
+    theme(legend.position = "none", 
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank())
+
+# Plot to get legend
+leg <- ggplot(data = oa_levels_sf) + theme_minimal() + geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") + scale_fill_manual(values = greypal) + labs(fill = "RD %") + theme(legend.position = "bottom")
+leg_p <- get_legend(leg)
+
+p2 <- ggplot(data = lsoa_levels_sf) +
+    geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
+    theme_void() +
+    scale_fill_manual(values = c("#969696", "#636363")) +
+    labs(fill = "RD %", title = "LSOA") +
+    theme(legend.position = "none", 
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank())
+  
+p3 <- ggplot(data = msoa_levels_sf) +
+    geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
+    theme_void() +
+    scale_fill_manual(values = c("#969696", "#636363")) +
+    labs(fill = "RD %", title = "MSOA") +
+    theme(legend.position = "none", 
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank())
+  
+p4 <- ggplot(data = ward_levels_sf) +
+    geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
+    theme_void() +
+    scale_fill_manual(values = c("#969696", "#636363")) +
+    labs(fill = "RD %", title = "Ward") +
+    theme(legend.position = "none", 
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank())
+  
+temp <- plot_grid(p1, p2, p3, p4, nrow = 1)
+full_plot <- plot_grid(temp, leg_p, nrow = 2)
+ggsave(plot = full_plot, filename = "visuals/map_comaprison_RD.png", height = 24, width = 24, unit = "cm")
 
 # Map comparisons 14.05.20.
 # OA ===
