@@ -985,7 +985,7 @@ p1 <- ggplot(data = oa_levels_sf) +
     geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
     theme_void() +
     scale_fill_manual(values = greypal) +
-    labs(fill = "RD %", title = "Output area") +
+    labs(fill = "RD %", title = "OA") +
     theme(legend.position = "none", 
           axis.text.x = element_blank(),
           axis.text.y = element_blank())
