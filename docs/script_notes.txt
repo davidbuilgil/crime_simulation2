@@ -1,6 +1,0 @@
-Just to check:
-- the 'mean level 4 education level' is simply the proportion of residents with Level 4 education?
-- and the denominator is not the total resident population, but rather, the 'all categories' of educ?
-- seems to be similar in some other categorical variables too.
-- even for ethnicity and income: no variance or SD need? Just the 'mean' number?
-- people with negative Age in Data$Age?
