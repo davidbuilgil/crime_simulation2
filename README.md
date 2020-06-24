@@ -1,7 +1,7 @@
 **Data and code for a project on bias in crime statistics using simulated data.**
 
 All scripts should be ran from within the 'crime_simulation.Rproj' R project file.
-Take note of the steps detailed in the _data description_ file before using the scripts.
+Take note of the steps detailed in the _data description_ file (in the 'docs' folder) before using the scripts.
 
 1. R script files named 'replicate_*' (e.g. replicate_age.R') are used to wrangle
    census data into an appropriate format for usage in the main script. These scripts
