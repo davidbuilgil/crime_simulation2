@@ -8,6 +8,9 @@
 #                                                      #
 ########################################################
 
+# To see everything in Console.
+options(max.print=999999)
+
 # Clear Global Environment.
 rm(list = ls())
 
@@ -663,7 +666,7 @@ full_plot <- plot_grid(plotlist = boxplot_list, nrow = 3, ncol = 2, labels = c("
 # Save full plot.
 ggsave(plot = full_plot, filename = "visuals/full_boxplot.png", height = 14, width = 8)
 
-# New grouped plot 14.05.20.
+# Grouped plot.
 rd_stats_df <- bind_rows(rd_stats_list, .id = "crime_type")
 
 full_plot_group <- ggplot(data = rd_stats_df) +
@@ -978,6 +981,7 @@ table(ward_levels_sf$RD_cut)
 greypal <- brewer_pal(palette = "Greys")(6)[2:6] # main
 # "#D9D9D9", "#BDBDBD", "#969696", "#636363", "#252525"
 
+# OA plot.
 p1 <- ggplot(data = oa_levels_sf) +
     geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
     theme_void() +
@@ -987,10 +991,7 @@ p1 <- ggplot(data = oa_levels_sf) +
           axis.text.x = element_blank(),
           axis.text.y = element_blank())
 
-# Plot to get legend
-leg <- ggplot(data = oa_levels_sf) + theme_minimal() + geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") + scale_fill_manual(values = greypal) + labs(fill = "RD %") + theme(legend.position = "bottom")
-leg_p <- get_legend(leg)
-
+# LSOA plot.
 p2 <- ggplot(data = lsoa_levels_sf) +
     geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
     theme_void() +
@@ -999,7 +1000,8 @@ p2 <- ggplot(data = lsoa_levels_sf) +
     theme(legend.position = "none", 
           axis.text.x = element_blank(),
           axis.text.y = element_blank())
-  
+
+# MSOA plot.  
 p3 <- ggplot(data = msoa_levels_sf) +
     geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
     theme_void() +
@@ -1008,7 +1010,8 @@ p3 <- ggplot(data = msoa_levels_sf) +
     theme(legend.position = "none", 
           axis.text.x = element_blank(),
           axis.text.y = element_blank())
-  
+
+# Ward plot.
 p4 <- ggplot(data = ward_levels_sf) +
     geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
     theme_void() +
@@ -1017,95 +1020,16 @@ p4 <- ggplot(data = ward_levels_sf) +
     theme(legend.position = "none", 
           axis.text.x = element_blank(),
           axis.text.y = element_blank())
-  
-temp <- plot_grid(p1, p2, p3, p4, nrow = 1)
-full_plot <- plot_grid(temp, leg_p, nrow = 2)
+
+# Plot just to get legend.
+leg <- ggplot(data = oa_levels_sf) + theme_minimal() + geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") + scale_fill_manual(values = greypal) + labs(fill = "RD %") + theme(legend.position = "bottom")
+leg_p <- get_legend(leg)
+
+
+# Arrange plots.
+maps_plot <- plot_grid(p1, p2, p3, p4, nrow = 1)
+full_plot <- plot_grid(maps_plot, leg_p, nrow = 2)
 ggsave(plot = full_plot, filename = "visuals/map_comaprison_RD.png", height = 24, width = 24, unit = "cm")
-
-# Map comparisons 14.05.20.
-# OA ===
-# Create breaks, filter for all crimes and make spatial again.
-oa_compare_map <- oa_compare_df %>%
-  filter(crime_type == "theft")
-
-all_crimes_brks <-  classIntervals(oa_compare_map$all_crimes, n = 4, style = "quantile")
-known_brks      <-  classIntervals(oa_compare_map$known, n = 4, style = "quantile")
-
-oa_compare_map_sf <- oa_compare_map %>% 
-  filter(crime_type == "theft") %>% 
-  st_as_sf(sf_column_name = "geometry") %>% 
-  mutate(all_crimes_cut = cut(all_crimes, all_crimes_brks$brks, include.lowest = T, dig.lab = 5),
-         known_cut      = cut(known     , known_brks$brks     , include.lowest = T, dig.lab = 5))
-
-table(oa_compare_map_sf$all_crimes_cut)
-
-# Map function.
-oa_map_fun <- function(x){
-  p1 <- ggplot(data = x) +
-    geom_sf(mapping = aes(fill = all_crimes_cut), colour = "transparent") +
-    theme_minimal() +
-    scale_fill_grey(start=0.8, end=0.2) +
-    labs(fill = "") +
-    theme(legend.position = "bottom")
-  p2 <- ggplot(data = x) +
-    geom_sf(mapping = aes(fill = known_cut), colour = "transparent") +
-    theme_minimal() +
-    scale_fill_grey(start=0.8, end=0.2) +
-    labs(fill = "") +
-    theme(legend.position = "bottom")
-  # temp <- ggplot(data = x) +
-  #   geom_sf(aes(fill = known_cut)) +
-  #   scale_fill_viridis_d(alpha = 0.9) +
-  #   labs(fill = "") +
-  #   theme(legend.position = "bottom") #+
-  # guides(fill = guide_colorbar(barwidth=20, barheight = 1)) + labs(fill = NULL)
-  # leg <- get_legend(temp)
-  # plot_maps <-   plot_grid(p1, p2, labels = c("Simulated all crime","Simulated crime known to police"),
-  #                          scale = 0.9, label_fontface = "plain")
-  # plot_grid(plot_maps, leg, nrow = 2, rel_heights = c(10,1))
-  plot_grid(p1, p2, nrow = 1, labels = c("All crime (synthetic data)","Known to police (synthetic data)"))
-}
-
-# Plot and save OA.
-temp <- oa_map_fun(oa_compare_map_sf)
-ggsave(plot = temp, filename = "visuals/map_comaprison_oa.png", height = 24, width = 24, unit = "cm")
-
-# MSOA ===
-# Create breaks, filter for all crimes and make spatial again.
-msoa_compare_map <- msoa_compare_df %>%
-  filter(crime_type == "theft")
-
-all_crimes_brks <-  classIntervals(msoa_compare_map$all_crimes, n = 4, style = "quantile")
-known_brks      <-  classIntervals(msoa_compare_map$known, n = 4, style = "quantile")
-
-msoa_compare_map_sf <- msoa_compare_map %>% 
-  filter(crime_type == "theft") %>% 
-  st_as_sf(sf_column_name = "geometry") %>% 
-  mutate(all_crimes_cut = cut(all_crimes, all_crimes_brks$brks, include.lowest = T, dig.lab = 5),
-         known_cut      = cut(known     , known_brks$brks     , include.lowest = T, dig.lab = 5))
-
-table(msoa_compare_map_sf$all_crimes_cut)
-
-# Map function.
-msoa_map_fun <- function(x){
-  p1 <- ggplot(data = x) +
-    geom_sf(mapping = aes(fill = all_crimes_cut), colour = "transparent") +
-    theme_minimal() +
-    scale_fill_grey(start=0.8, end=0.2) +
-    labs(fill = "") +
-    theme(legend.position = "bottom") 
-  p2 <- ggplot(data = x) +
-    geom_sf(mapping = aes(fill = known_cut), colour = "transparent") +
-    theme_minimal() +
-    scale_fill_grey(start=0.8, end=0.2) +
-    labs(fill = "") +
-    theme(legend.position = "bottom")
-plot_grid(p1, p2, nrow = 1, labels = c("All crime (synthetic data)","Known to police (synthetic data)"))
-}
-
-# Plot and save MSOA.
-temp <- msoa_map_fun(msoa_compare_map_sf)
-ggsave(plot = temp, filename = "visuals/map_comaprison_msoa.png", height = 24, width = 24, unit = "cm")
 
 # Compute correlations between crimes known to police (simulated data) and crime recorded by GMP (direct aggregates).
 cor_oa_df <- oa_compare_df %>% 
@@ -1235,73 +1159,16 @@ mi_ward_df <- ward_compare_df %>%
             stat = lm.morantest.exact(lm(known ~ GMP_agg), ward_prox)$statistic,
             p    = lm.morantest.exact(lm(known ~ GMP_agg), ward_prox)$p.value)
 
-# ==============================================================
-# ==============================================================
-# David: Edited down to here 29.04.2020 ========================
-# ==============================================================
-# ==============================================================
-
-# Temporary test: single local moran's I check for all crimes at Ward level.
-type_temp <-  "all_crimes"
-
-t1 <- localmoran(ward_compare_sf_list[[type_temp]]$count, ward_prox)
-t2 <- localmoran(ward_compare_sf_list[[type_temp]]$known, ward_prox)
-t1_df <- as.data.frame(t1)
-t2_df <- as.data.frame(t2)
-
-p1 <- ggplot(ward_compare_sf_list[[type_temp]]) + geom_sf(mapping = aes(fill = t1_df$Ii))
-p2 <- ggplot(ward_compare_sf_list[[type_temp]]) + geom_sf(mapping = aes(fill = t2_df$Ii))
-
-plot_grid(p1, p2, nrow = 1)
-
-cor.test(t1_df$Z.Ii, t2_df$Z.Ii, method = "spearman") # This make sense?
-
-cor.test(t1, t2, method = "spearman") # Or this make sense?
-
-# To-do: loops for the above.
-
-# Local Moran's I loop for each GMP count.
-oa_count_mi_list   <- lapply(oa_compare_sf_list  , function(x) localmoran(x$count, oa_prox))
-lsoa_count_mi_list <- lapply(lsoa_compare_sf_list, function(x) localmoran(x$count, lsoa_prox))
-msoa_count_mi_list <- lapply(msoa_compare_sf_list, function(x) localmoran(x$count, msoa_prox))
-ward_count_mi_list <- lapply(ward_compare_sf_list, function(x) localmoran(x$count, ward_prox))
-
-# Local Moran's I loop for each CSEW estimated count.
-oa_known_mi_list   <- lapply(oa_compare_sf_list  , function(x) localmoran(x$known, oa_prox))
-lsoa_known_mi_list <- lapply(lsoa_compare_sf_list, function(x) localmoran(x$known, lsoa_prox))
-msoa_known_mi_list <- lapply(msoa_compare_sf_list, function(x) localmoran(x$known, msoa_prox))
-ward_known_mi_list <- lapply(ward_compare_sf_list, function(x) localmoran(x$known, ward_prox))
-
-# ==============================================================
-# ==============================================================
-# Edited down to here 26.04.2020 ===============================
-# ==============================================================
-# ==============================================================
-
-# Save proximity matrix
-saveRDS(lw_OA, file="data/lw_OA.RData")
-
-}
-
-# Correlation betwen LISA from GMP and our dataset of simulated crimes
-LISA_OA_all_GMP <- localmoran(crimes_OA_all$GMP, lw_OA)
-LISA_OA_all_sim <- localmoran(crimes_OA_all$known, lw_OA)
-
-
-
-
-# ==============================
-# ============================== Edited down to here 26.04.20
-# ==============================
-
 # Empirical evaluation of simulated dataset from CSEW data
 
 # Create three agre groups - CSEW data.
+csew$age_rec <- NA
 csew$age_rec[csew$age < 36] <- "less35"
 csew$age_rec[csew$age >= 36 & csew$age < 56] <- "36to55"
 csew$age_rec[csew$age >= 56] <- "56more"
 
-# Create three agre groups - simulated data.
+# Create three age groups - simulated data.
+syn_res_OA$age_rec <- NA
 syn_res_OA$age_rec[syn_res_OA$Age >= 16 & syn_res_OA$Age < 36] <- "less35"
 syn_res_OA$age_rec[syn_res_OA$Age >= 36 & syn_res_OA$Age < 56] <- "36to55"
 syn_res_OA$age_rec[syn_res_OA$Age >= 56] <- "56more"
@@ -1591,6 +1458,7 @@ stats::weighted.mean(x = csew$violence[which(csew$educat2 == 0)],
 mean(x = syn_res_OA$violence[which(syn_res_OA$High_edu == 0)])
 
 # Create three age groups for vehicle crime dataset.
+csew_vf_vehicle$age_rec <- NA
 csew_vf_vehicle$age_rec[csew_vf_vehicle$age < 36] <- "less35"
 csew_vf_vehicle$age_rec[csew_vf_vehicle$age >= 36 & csew_vf_vehicle$age < 56] <- "36to55"
 csew_vf_vehicle$age_rec[csew_vf_vehicle$age >= 56] <- "56more"
@@ -1682,6 +1550,7 @@ mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
                                       Data_crimes$High_edu == 0)])
 
 # Create three age groups for residence crime data.
+csew_vf_residence$age_rec <- NA
 csew_vf_residence$age_rec[csew_vf_residence$age < 36] <- "less35"
 csew_vf_residence$age_rec[csew_vf_residence$age >= 36 & csew_vf_residence$age < 56] <- "36to55"
 csew_vf_residence$age_rec[csew_vf_residence$age >= 56] <- "56more"
@@ -1769,6 +1638,7 @@ mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
                                       Data_crimes$High_edu == 0)])
 
 # Create three age groups for property crime data.
+csew_vf_theft$age_rec <- NA
 csew_vf_theft$age_rec[csew_vf_theft$age < 36] <- "less35"
 csew_vf_theft$age_rec[csew_vf_theft$age >= 36 & csew_vf_theft$age < 56] <- "36to55"
 csew_vf_theft$age_rec[csew_vf_theft$age >= 56] <- "56more"
@@ -1856,6 +1726,7 @@ mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
                                       Data_crimes$High_edu == 0)])
 
 #Create three age groups for violent crimes data.
+csew_vf_violence$age_rec <- NA
 csew_vf_violence$age_rec[csew_vf_violence$age < 36] <- "less35"
 csew_vf_violence$age_rec[csew_vf_violence$age >= 36 & csew_vf_violence$age < 56] <- "36to55"
 csew_vf_violence$age_rec[csew_vf_violence$age >= 56] <- "56more"
@@ -1941,15 +1812,3 @@ stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$educat
 
 mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
                                       Data_crimes$High_edu == 0)])
-
-# CREATE TWO FIGURES (two maps in each)
-
-# FIGURE 1. ALL CRIMES AND CRIMES KNOWN TO POLICE AT THE OUTPUT AREA LEVEL (SIMULATED DATA)
-# Details of two maps: 
-  #left map: number of crimes (all) by output area. coropleth map divided by quartiles
-  #right map: number of crimes known to police by output area. coropleth map divided by quartiles
-
-# FIGURE 1. ALL CRIMES AND THOSE KNOWN TO POLICE AT THE MSOA LEVEL (SIMULATED DATA)
-# Details of two maps: 
-  #left map: number of crimes (all) by MSOA. coropleth map divided by quartiles
-  #right map: number of crimes known to police by MSOA. coropleth map divided by quartiles
