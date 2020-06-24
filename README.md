@@ -11,4 +11,4 @@ Take note of the steps detailed in the _data description_ file (in the 'docs' fo
    the data is too large in its raw form. Use this script to load, wrangle, and re-save the data.
 3. R script file named 'simulation_analysis.R' is the main script to replicate the study. It can only
    be ran once data has been processed in steps 1 and 2. It generates and saves the visuals. Statistics
-   reported in the paper are usually printed to the Console.
+   reported in the paper are printed to the Console.
