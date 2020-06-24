@@ -47,6 +47,7 @@ Choose ‘Manchester’ within the option ‘List areas within’, and click on 
 ON THE LEFT PANEL: Click on ‘Qualification’ and tick the options ‘All categories: Highest level of qualification’ and ‘Level 4 qualifications and above’  
 ON THE LEFT PANEL: Click on ‘Download data’ and then ‘Download data for Excel 2007 (.xlsx)’  
 
+Police recorded crime data for Greater Manchester Police can be obtained from the [open data portal](https://data.police.uk/data/). The time period is selected via the dropdown menus, and police force selected using tickboxes. Files are downloaded month-by-month in .csv format.
 
 _Script run guide_.
 
