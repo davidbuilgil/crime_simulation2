@@ -8,6 +8,7 @@
 #                                                      #
 ########################################################
 
+# Clear Global Environment.
 rm(list = ls())
 
 # Load packages required.
@@ -614,7 +615,6 @@ rd_fun <- function(x) {
 # Compile into list and name
 units_list <- list(crimes_units, vehicle_units, residence_units, theft_units, violent_units)
 names(units_list) <- c("all_crimes", "vehicle", "residence", "theft", "violent")
-#names(units_list) <- c("all_crimes", "vehicle_crime", "residence_crime", "theft_crime", "violent_crime")
 
 # Loop funtion thru list
 rd_stats_list <- lapply(units_list, rd_fun)
@@ -680,7 +680,6 @@ full_plot_group <- ggplot(data = rd_stats_df) +
 
 # Save full grouped plot
 ggsave(plot = full_plot_group, filename = "visuals/full_boxplot_grouped.png", height = 10, width = 12)
-# ggsave(plot = full_plot_group, filename = "visuals/full_boxplot_grouped_outliers.png", height = 10, width = 12)
 
 # Function to calculate ARB stats for each crime type.
 ARB_fun <- function(x){
@@ -706,7 +705,6 @@ GMP_manc <- GMP_all %>%
   filter(ladnm == "Manchester")
 
 # Check to remove crimes which did not occurr within a Manchester LSOA.
-#GMP_manc <- subset(GMP_all, LSOA.code %in% LSOA_to_ward$LSOA)
 
 # Recode crime types to match categories used thus far.
 GMP_manc <- GMP_manc %>%
@@ -732,7 +730,6 @@ GMP_all_list <- c((GMP_all_list), list(GMP_manc))
 
 # Rename elements of the list (order checked manually).
 names(GMP_all_list) <- c("residence", "theft", "vehicle", "violent", "all_crimes")
-#names(GMP_all_list) <- c("other", "residence_crime", "theft_crime", "vehicle_crime", "violent_crime", "all_crimes")
 
 # Create sf point objects for each df in the list.
 GMP_all_list_sf <- lapply(GMP_all_list, function(x)st_as_sf(x, coords = c(x = "Longitude", y = "Latitude"), crs = 4326))
