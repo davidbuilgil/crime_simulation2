@@ -1127,12 +1127,6 @@ mi_lsoa_df <- lsoa_compare_df %>%
             p    = lm.morantest.exact(lm(known ~ count), lsoa_prox)$p.value)
 mi_lsoa_df
 
-mi_lsoa_df <- lsoa_compare_df %>%
-  group_by(crime_type) %>%
-  summarise(mi   = lm.morantest.exact(lm(known ~ GMP_agg), lsoa_prox)$estimate,
-            stat = lm.morantest.exact(lm(known ~ GMP_agg), lsoa_prox)$statistic,
-            p    = lm.morantest.exact(lm(known ~ GMP_agg), lsoa_prox)$p.value)
-
 mi_msoa_df <- msoa_compare_df %>%
   group_by(crime_type) %>%
   summarise(mi   = lm.morantest.exact(lm(known ~ count), msoa_prox)$estimate,
