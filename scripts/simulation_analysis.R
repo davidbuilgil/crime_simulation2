@@ -151,21 +151,25 @@ model_vehicle <- glm.nb(vehicle ~ age + sex + reseth + remploy + educat2, data =
 summary(model_vehicle)
 #PseudoR2(model_vehicle)
 rsq.n(model_vehicle)
+RMSE(model_vehicle)/(max(csew$vehicle)-min(csew$vehicle))
 
 model_residence <- glm.nb(residence ~ age + sex + reseth + remploy + educat2, data = csew)
 summary(model_residence)
 #PseudoR2(model_residence)
 rsq.n(model_residence)
+RMSE(model_residence)/(max(csew$residence)-min(csew$residence))
 
 model_theft <- glm.nb(theft ~ age + sex + reseth + remploy + educat2, data = csew)
 summary(model_theft)
 #PseudoR2(model_theft)
 rsq.n(model_theft)
+RMSE(model_theft)/(max(csew$theft)-min(csew$theft))
 
 model_violence <- glm.nb(violence ~ age + sex + reseth + remploy + educat2, data = csew)
 summary(model_violence)
 #PseudoR2(model_violence)
 rsq.n(model_violence)
+RMSE(model_violence)/(max(csew$violence)-min(csew$violence))
 
 model_all_crimes <- glm.nb(all_crimes ~ age + sex + reseth + remploy + educat2, data = csew)
 summary(model_all_crimes)
