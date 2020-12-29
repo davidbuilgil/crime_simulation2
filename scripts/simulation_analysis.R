@@ -496,7 +496,7 @@ OA_to_LAD <- OA_to_LAD %>%
   rename(OA = OA11CD) %>% 
   filter(LAD17NM == "Manchester")
 
-# Join to Data_crimes, remove unwaned columns, rename census units.
+# Join to Data_crimes, remove unwanted columns, rename census units.
 Data_crimes <- Data_crimes %>% 
   left_join(OA_to_LAD) %>% 
   rename(LSOA = LSOA11CD,
@@ -711,7 +711,7 @@ GMP_manc <- GMP_all %>%
   left_join(LSOA_to_ward, by = c("lsoa11cd" = "LSOA")) %>%
   filter(ladnm == "Manchester")
 
-# Check to remove crimes which did not occurr within a Manchester LSOA.
+# Check to remove crimes which did not occur within a Manchester LSOA.
 
 # Recode crime types to match categories used thus far.
 GMP_manc <- GMP_manc %>%
@@ -902,7 +902,7 @@ wd_agg_all <- GMP_manc %>%
 
 wd_agg <- bind_rows(wd_agg, wd_agg_all)
 
-# Bind togethe with main comparison dataset.
+# Bind together with main comparison dataset.
 oa_compare_df <- oa_compare_df %>%
   select(-unit_type) %>%
   full_join(oa_agg, by = c("crime_type", "unit")) %>%
