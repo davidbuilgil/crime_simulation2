@@ -65,7 +65,7 @@ ON THE LEFT PANEL: Click on ‘Download data’ and then ‘Download data for Ex
 
 Police recorded crime data for Greater Manchester Police can be obtained from the [open data portal](https://data.police.uk/data/). The time period is selected via the dropdown menus, and police force selected using tickboxes. Files are downloaded month-by-month in .csv format.
 
-Index of Multiple Deprivation 2010 data are downlaoded from the file 'English IMD 2010 mapped onto 2011 LSOAs' from the [Consumer Data Research Centre](https://data.cdrc.ac.uk/dataset/index-multiple-deprivation-imd).
+Index of Multiple Deprivation 2010 data are downlaoded from the file 'English IMD 2010 mapped onto 2011 LSOAs' published by the [Consumer Data Research Centre](https://data.cdrc.ac.uk/dataset/index-multiple-deprivation-imd).
 
 _Script run guide_.
 
