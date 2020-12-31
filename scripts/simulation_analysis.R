@@ -85,7 +85,7 @@ syn_res_OA <- syn_res_OA %>%
   mutate(No_income = rbinom(n = N, size = 1, prob = mean_no_income)) %>%
   select(ID, OA, Age, Male, White, No_income)
   
-# Load data on income.
+# Load data on education.
 Edu_by_OA_Manchester <- read_csv(here("data","Edu_by_OA_Manchester_replicate.csv"))
 
 # Join the OA-level education data with the synthetic individual-level data.
@@ -95,6 +95,16 @@ syn_res_OA <- left_join(syn_res_OA, Edu_by_OA_Manchester, by = "OA")
 syn_res_OA <- syn_res_OA %>% 
   mutate(High_edu = rbinom(n = N, size = 1, prob = Mean_level4_edu)) %>%
   select(ID, OA, Age, Male, White, No_income, High_edu)
+
+# Load data on marriage status.
+
+
+# Load data on country of birth.
+
+
+
+
+
 
 # Load in CSEW nvf data
 load(here("data","csew_apr11mar12_nvf.Rdata"))
