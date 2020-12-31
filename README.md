@@ -23,7 +23,7 @@ Choose ‘Manchester’ within the option ‘List areas within’, and click on 
 ON THE LEFT PANEL: Click on ‘Age’ and tick the options ‘All usual residents’, all age groups and ‘Mean’  
 ON THE LEFT PANEL: Click on ‘Download data’ and then ‘Download data for Excel 2007 (.xlsx)’  
   
-ETHNIC GROUP (to access number of whites per Output Area).
+ETHNIC GROUP (to access number of whites per Output Area).  
 Download from [NOMIS website](https://www.nomisweb.co.uk/query/construct/summary.asp?mode=construct&version=0&dataset=608).  
 ON THE LEFT PANEL: Click on ‘Geography’  
 FROM SELECT USING LIST: Click on ‘Output area’ and select ‘Some’  
