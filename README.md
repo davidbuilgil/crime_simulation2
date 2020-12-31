@@ -45,9 +45,27 @@ ON THE LEFT PANEL: Click on ‘Geography’
 FROM SELECT USING LIST: Click on ‘Output area’ and select ‘Some’  
 Choose ‘Manchester’ within the option ‘List areas within’, and click on ‘tick all’  
 ON THE LEFT PANEL: Click on ‘Qualification’ and tick the options ‘All categories: Highest level of qualification’ and ‘Level 4 qualifications and above’  
-ON THE LEFT PANEL: Click on ‘Download data’ and then ‘Download data for Excel 2007 (.xlsx)’  
+ON THE LEFT PANEL: Click on ‘Download data’ and then ‘Download data for Excel 2007 (.xlsx)’ 
+
+COUNTRY OF BIRTH (to access residents aggregated by age per Output Area).
+Download from NOMIS website.
+ON THE LEFT PANEL: Click on ‘Geography’
+FROM SELECT USING LIST: Click on ‘Output area’ and select ‘Some’
+Choose ‘Manchester’ within the option ‘List areas within’, and click on ‘tick all’
+ON THE LEFT PANEL: Click on ‘Country of birth’ and tick the options ‘All usual residents’ and ‘United Kingdom’
+ON THE LEFT PANEL: Click on ‘Download data’ and then ‘Download data for Excel 2007 (.xlsx)’
+
+MARRIAGE STATUS (to access residents aggregated by age per Output Area).
+Download from NOMIS website.
+ON THE LEFT PANEL: Click on ‘Geography’
+FROM SELECT USING LIST: Click on ‘Output area’ and select ‘Some’
+Choose ‘Manchester’ within the option ‘List areas within’, and click on ‘tick all’
+ON THE LEFT PANEL: Click on ‘Marital status’ and tick the options ‘All usual residents’, ‘Married’ and ‘In a registered same-sex civil partnership’
+ON THE LEFT PANEL: Click on ‘Download data’ and then ‘Download data for Excel 2007 (.xlsx)’
 
 Police recorded crime data for Greater Manchester Police can be obtained from the [open data portal](https://data.police.uk/data/). The time period is selected via the dropdown menus, and police force selected using tickboxes. Files are downloaded month-by-month in .csv format.
+
+Index of Multiple Deprivation 2010 data are downlaoded from the file 'English indices of deprivation 2010: all domains, all sub domains and supplementary indices' in [GOV.UK](https://www.gov.uk/government/statistics/english-indices-of-deprivation-2010).
 
 _Script run guide_.
 
