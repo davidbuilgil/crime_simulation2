@@ -48,7 +48,7 @@ ON THE LEFT PANEL: Click on ‘Qualification’ and tick the options ‘All cate
 ON THE LEFT PANEL: Click on ‘Download data’ and then ‘Download data for Excel 2007 (.xlsx)’ 
 
 COUNTRY OF BIRTH (to access residents aggregated by age per Output Area).
-Download from NOMIS website.
+Download from [NOMIS website](https://www.nomisweb.co.uk/query/construct/summary.asp?mode=construct&version=0&dataset=611).
 ON THE LEFT PANEL: Click on ‘Geography’
 FROM SELECT USING LIST: Click on ‘Output area’ and select ‘Some’
 Choose ‘Manchester’ within the option ‘List areas within’, and click on ‘tick all’
