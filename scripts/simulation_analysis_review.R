@@ -1277,7 +1277,8 @@ syn_res_OA <- left_join(syn_res_OA, syn_res_units, by = "ID")
 
 # Replace NAs with 0.
 syn_res_OA <- syn_res_OA %>%
-  mutate_at(vars(vehicle.a, residence.a, theft.a, violence.a), ~tidyr::replace_na(., 0))
+  mutate_at(vars(vehicle.a, residence.a, theft.a, violence.a), ~tidyr::replace_na(., 0)) %>%
+  filter(Age > 16)
 
 # Create three agre groups - CSEW data.
 csew$age_rec <- NA
