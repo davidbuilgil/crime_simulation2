@@ -1216,18 +1216,18 @@ msoa_prox$neighbours
 ward_prox$neighbours
 
 # Global Morans'I.
-mi_oa_df <- oa_compare_df %>%
-  group_by(crime_type) %>%
-  summarise(mi   = lm.morantest.exact(lm(known ~ count), oa_prox)$estimate,
-            stat = lm.morantest.exact(lm(known ~ count), oa_prox)$statistic,
-            p    = lm.morantest.exact(lm(known ~ count), oa_prox)$p.value)
-mi_oa_df
+#mi_oa_df <- oa_compare_df %>%
+#  group_by(crime_type) %>%
+#  summarise(mi   = lm.morantest.exact(lm(known ~ count), oa_prox)$estimate,
+#            stat = lm.morantest.exact(lm(known ~ count), oa_prox)$statistic,
+#            p    = lm.morantest.exact(lm(known ~ count), oa_prox)$p.value)
+#mi_oa_df
 
-mi_oa_df <- oa_compare_df %>%
-  group_by(crime_type) %>%
-  summarise(mi   = lm.morantest.exact(lm(known ~ GMP_agg), oa_prox)$estimate,
-            stat = lm.morantest.exact(lm(known ~ GMP_agg), oa_prox)$statistic,
-            p    = lm.morantest.exact(lm(known ~ GMP_agg), oa_prox)$p.value)
+#mi_oa_df <- oa_compare_df %>%
+#  group_by(crime_type) %>%
+#  summarise(mi   = lm.morantest.exact(lm(known ~ GMP_agg), oa_prox)$estimate,
+#            stat = lm.morantest.exact(lm(known ~ GMP_agg), oa_prox)$statistic,
+#            p    = lm.morantest.exact(lm(known ~ GMP_agg), oa_prox)$p.value)
 
 mi_lsoa_df <- lsoa_compare_df %>%
   group_by(crime_type) %>%
@@ -1363,6 +1363,51 @@ stats::weighted.mean(x = csew$vehicle[which(csew$educat2 == 0)],
 
 mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$High_edu == 0)])
 
+# Mean of vehicle crime victimisations by marriage status.
+stats::weighted.mean(x = csew$vehicle[which(csew$marsta == 1)],
+                     w = csew$IndivWgt[which(csew$marsta == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$Married == 1)])
+
+stats::weighted.mean(x = csew$vehicle[which(csew$marsta == 0)],
+                     w = csew$IndivWgt[which(csew$marsta == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$Married == 0)])
+
+# Mean of vehicle crime victimisations by country of birth.
+stats::weighted.mean(x = csew$vehicle[which(csew$cry2 == 1)],
+                     w = csew$IndivWgt[which(csew$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$BornUK == 1)])
+
+stats::weighted.mean(x = csew$vehicle[which(csew$cry2 == 0)],
+                     w = csew$IndivWgt[which(csew$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$BornUK == 0)])
+
+# Mean of vehicle crime victimisations by IMD deciles.
+stats::weighted.mean(x = csew$vehicle[which(csew$emdidec3 <= 3)],
+                     w = csew$IndivWgt[which(csew$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew$vehicle[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$IMD_rank > 3 & syn_res_OA$IMD_rank < 7)])
+
+stats::weighted.mean(x = csew$vehicle[which(csew$emdidec3 >= 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$IMD_rank >= 7)])
+
 # Mean of residence crime victimisations by age.
 stats::weighted.mean(x = csew$residence[which(csew$age_rec == "less35")],
                      w = csew$IndivWgt[which(csew$age_rec == "less35")],
@@ -1433,6 +1478,51 @@ stats::weighted.mean(x = csew$residence[which(csew$educat2 == 0)],
                      na.rm = T)
 
 mean(x = syn_res_OA$residence.a[which(syn_res_OA$High_edu == 0)])
+
+# Mean of residence crime victimisations by marriage status.
+stats::weighted.mean(x = csew$residence[which(csew$marsta == 1)],
+                     w = csew$IndivWgt[which(csew$marsta == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$Married == 1)])
+
+stats::weighted.mean(x = csew$residence[which(csew$marsta == 0)],
+                     w = csew$IndivWgt[which(csew$marsta == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$Married == 0)])
+
+# Mean of residence crime victimisations by country of birth.
+stats::weighted.mean(x = csew$residence[which(csew$cry2 == 1)],
+                     w = csew$IndivWgt[which(csew$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$BornUK == 1)])
+
+stats::weighted.mean(x = csew$residence[which(csew$cry2 == 0)],
+                     w = csew$IndivWgt[which(csew$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$BornUK == 0)])
+
+# Mean of residence crime victimisations by IMD deciles.
+stats::weighted.mean(x = csew$residence[which(csew$emdidec3 <= 3)],
+                     w = csew$IndivWgt[which(csew$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew$residence[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$IMD_rank > 3 & syn_res_OA$IMD_rank < 7)])
+
+stats::weighted.mean(x = csew$residence[which(csew$emdidec3 >= 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$IMD_rank >= 7)])
 
 # Mean of property crime victimisations by age.
 stats::weighted.mean(x = csew$theft[which(csew$age_rec == "less35")],
@@ -1505,6 +1595,51 @@ stats::weighted.mean(x = csew$theft[which(csew$educat2 == 0)],
 
 mean(x = syn_res_OA$theft.a[which(syn_res_OA$High_edu == 0)])
 
+# Mean of property crime victimisations by marriage status.
+stats::weighted.mean(x = csew$theft[which(csew$marsta == 1)],
+                     w = csew$IndivWgt[which(csew$marsta == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$Married == 1)])
+
+stats::weighted.mean(x = csew$theft[which(csew$marsta == 0)],
+                     w = csew$IndivWgt[which(csew$marsta == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$Married == 0)])
+
+# Mean of property crime victimisations by country of birth.
+stats::weighted.mean(x = csew$theft[which(csew$cry2 == 1)],
+                     w = csew$IndivWgt[which(csew$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$BornUK == 1)])
+
+stats::weighted.mean(x = csew$theft[which(csew$cry2 == 0)],
+                     w = csew$IndivWgt[which(csew$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$BornUK == 0)])
+
+# Mean of property crime victimisations by IMD deciles.
+stats::weighted.mean(x = csew$theft[which(csew$emdidec3 <= 3)],
+                     w = csew$IndivWgt[which(csew$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew$theft[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$IMD_rank > 3 & syn_res_OA$IMD_rank < 7)])
+
+stats::weighted.mean(x = csew$theft[which(csew$emdidec3 >= 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$IMD_rank >= 7)])
+
 # Mean of violent crime victimisations by age.
 stats::weighted.mean(x = csew$violence[which(csew$age_rec == "less35")],
                      w = csew$IndivWgt[which(csew$age_rec == "less35")],
@@ -1575,6 +1710,51 @@ stats::weighted.mean(x = csew$violence[which(csew$educat2 == 0)],
                      na.rm = T)
 
 mean(x = syn_res_OA$violence.a[which(syn_res_OA$High_edu == 0)])
+
+# Mean of violence crime victimisations by marriage status.
+stats::weighted.mean(x = csew$violence[which(csew$marsta == 1)],
+                     w = csew$IndivWgt[which(csew$marsta == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$Married == 1)])
+
+stats::weighted.mean(x = csew$violence[which(csew$marsta == 0)],
+                     w = csew$IndivWgt[which(csew$marsta == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$Married == 0)])
+
+# Mean of violence crime victimisations by country of birth.
+stats::weighted.mean(x = csew$violence[which(csew$cry2 == 1)],
+                     w = csew$IndivWgt[which(csew$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$BornUK == 1)])
+
+stats::weighted.mean(x = csew$violence[which(csew$cry2 == 0)],
+                     w = csew$IndivWgt[which(csew$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$BornUK == 0)])
+
+# Mean of violence crime victimisations by IMD deciles.
+stats::weighted.mean(x = csew$violence[which(csew$emdidec3 <= 3)],
+                     w = csew$IndivWgt[which(csew$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew$violence[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$IMD_rank > 3 & syn_res_OA$IMD_rank < 7)])
+
+stats::weighted.mean(x = csew$violence[which(csew$emdidec3 >= 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$IMD_rank >= 7)])
 
 # Create three age groups for vehicle crime dataset.
 csew_vf_vehicle$age_rec <- NA
@@ -1668,6 +1848,58 @@ stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$educat2 
 mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
                                       Data_crimes$High_edu == 0)])
 
+# Mean of crime reporting for vehicle crimes by marriage status.
+stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$marsta == 1)],
+                     w = csew_vf_vehicle$IndivWgt.x[which(csew_vf_vehicle$marsta == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
+                                      Data_crimes$Married == 1)])
+
+stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$marsta == 0)],
+                     w = csew_vf_vehicle$IndivWgt.x[which(csew_vf_vehicle$marsta == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
+                                      Data_crimes$Married == 0)])
+
+# Mean of crime reporting for vehicle crimes by country of birth.
+stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$cry2 == 1)],
+                     w = csew_vf_vehicle$IndivWgt.x[which(csew_vf_vehicle$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
+                                      Data_crimes$BornUK == 1)])
+
+stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$cry2 == 0)],
+                     w = csew_vf_vehicle$IndivWgt.x[which(csew_vf_vehicle$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
+                                      Data_crimes$BornUK == 0)])
+
+# Mean of crime reporting for vehicle crimes by IMD deciles.
+stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$emdidec3 <= 3)],
+                     w = csew_vf_vehicle$IndivWgt.x[which(csew_vf_vehicle$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
+                                      Data_crimes$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$emdidec3 > 3 & csew_vf_vehicle$emdidec3 < 7)],
+                     w = csew_vf_vehicle$IndivWgt.x[which(csew_vf_vehicle$emdidec3 > 3 & csew_vf_vehicle$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
+                                      Data_crimes$IMD_rank > 3 & Data_crimes$IMD_rank > 7)])
+
+stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$emdidec3 >= 7)],
+                     w = csew_vf_vehicle$IndivWgt.x[which(csew_vf_vehicle$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
+                                      Data_crimes$IMD_rank >= 7)])
+
 # Create three age groups for residence crime data.
 csew_vf_residence$age_rec <- NA
 csew_vf_residence$age_rec[csew_vf_residence$age < 36] <- "less35"
@@ -1755,6 +1987,58 @@ stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$educ
 
 mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
                                       Data_crimes$High_edu == 0)])
+
+# Mean of crime reporting for residence crimes by marriage status.
+stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$marsta == 1)],
+                     w = csew_vf_residence$IndivWgt.x[which(csew_vf_residence$marsta == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
+                                      Data_crimes$Married == 1)])
+
+stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$marsta == 0)],
+                     w = csew_vf_residence$IndivWgt.x[which(csew_vf_residence$marsta == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
+                                      Data_crimes$Married == 0)])
+
+# Mean of crime reporting for residence crimes by country of birth.
+stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$cry2 == 1)],
+                     w = csew_vf_residence$IndivWgt.x[which(csew_vf_residence$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
+                                      Data_crimes$BornUK == 1)])
+
+stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$cry2 == 0)],
+                     w = csew_vf_residence$IndivWgt.x[which(csew_vf_residence$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
+                                      Data_crimes$BornUK == 0)])
+
+# Mean of crime reporting for residence crimes by IMD deciles.
+stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$emdidec3 <= 3)],
+                     w = csew_vf_residence$IndivWgt.x[which(csew_vf_residence$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
+                                      Data_crimes$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$emdidec3 > 3 & csew_vf_residence$emdidec3 < 7)],
+                     w = csew_vf_residence$IndivWgt.x[which(csew_vf_residence$emdidec3 > 3 & csew_vf_residence$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
+                                      Data_crimes$IMD_rank > 3 & Data_crimes$IMD_rank > 7)])
+
+stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$emdidec3 >= 7)],
+                     w = csew_vf_residence$IndivWgt.x[which(csew_vf_residence$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
+                                      Data_crimes$IMD_rank >= 7)])
 
 # Create three age groups for property crime data.
 csew_vf_theft$age_rec <- NA
@@ -1844,6 +2128,58 @@ stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$educat2 == 0
 mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
                                       Data_crimes$High_edu == 0)])
 
+# Mean of crime reporting for property crimes by marriage status.
+stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$marsta == 1)],
+                     w = csew_vf_theft$IndivWgt.x[which(csew_vf_theft$marsta == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
+                                      Data_crimes$Married == 1)])
+
+stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$marsta == 0)],
+                     w = csew_vf_theft$IndivWgt.x[which(csew_vf_theft$marsta == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
+                                      Data_crimes$Married == 0)])
+
+# Mean of crime reporting for property crimes by country of birth.
+stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$cry2 == 1)],
+                     w = csew_vf_theft$IndivWgt.x[which(csew_vf_theft$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
+                                      Data_crimes$BornUK == 1)])
+
+stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$cry2 == 0)],
+                     w = csew_vf_theft$IndivWgt.x[which(csew_vf_theft$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
+                                      Data_crimes$BornUK == 0)])
+
+# Mean of crime reporting for property crimes by IMD deciles.
+stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$emdidec3 <= 3)],
+                     w = csew_vf_theft$IndivWgt.x[which(csew_vf_theft$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
+                                      Data_crimes$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$emdidec3 > 3 & csew_vf_theft$emdidec3 < 7)],
+                     w = csew_vf_theft$IndivWgt.x[which(csew_vf_theft$emdidec3 > 3 & csew_vf_theft$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
+                                      Data_crimes$IMD_rank > 3 & Data_crimes$IMD_rank > 7)])
+
+stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$emdidec3 >= 7)],
+                     w = csew_vf_theft$IndivWgt.x[which(csew_vf_theft$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
+                                      Data_crimes$IMD_rank >= 7)])
+
 #Create three age groups for violent crimes data.
 csew_vf_violence$age_rec <- NA
 csew_vf_violence$age_rec[csew_vf_violence$age < 36] <- "less35"
@@ -1931,3 +2267,55 @@ stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$educat
 
 mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
                                       Data_crimes$High_edu == 0)])
+
+# Mean of crime reporting for violence crimes by marriage status.
+stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$marsta == 1)],
+                     w = csew_vf_violence$IndivWgt.x[which(csew_vf_violence$marsta == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
+                                      Data_crimes$Married == 1)])
+
+stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$marsta == 0)],
+                     w = csew_vf_violence$IndivWgt.x[which(csew_vf_violence$marsta == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
+                                      Data_crimes$Married == 0)])
+
+# Mean of crime reporting for violence crimes by country of birth.
+stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$cry2 == 1)],
+                     w = csew_vf_violence$IndivWgt.x[which(csew_vf_violence$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
+                                      Data_crimes$BornUK == 1)])
+
+stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$cry2 == 0)],
+                     w = csew_vf_violence$IndivWgt.x[which(csew_vf_violence$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
+                                      Data_crimes$BornUK == 0)])
+
+# Mean of crime reporting for violence crimes by IMD deciles.
+stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$emdidec3 <= 3)],
+                     w = csew_vf_violence$IndivWgt.x[which(csew_vf_violence$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
+                                      Data_crimes$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$emdidec3 > 3 & csew_vf_violence$emdidec3 < 7)],
+                     w = csew_vf_violence$IndivWgt.x[which(csew_vf_violence$emdidec3 > 3 & csew_vf_violence$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
+                                      Data_crimes$IMD_rank > 3 & Data_crimes$IMD_rank > 7)])
+
+stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$emdidec3 >= 7)],
+                     w = csew_vf_violence$IndivWgt.x[which(csew_vf_violence$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
+                                      Data_crimes$IMD_rank >= 7)])
