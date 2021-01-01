@@ -232,11 +232,15 @@ RMSE(model_violence)/(max(csew$violence)-min(csew$violence))
 
 model_all_crimes <- glm.nb(all_crimes ~ age + sex + reseth + remploy + educat2 + marsta + cry2 + emdidec3, data = csew)
 summary(model_all_crimes)
+rsq.n(model_all_crimes)
+RMSE(model_all_crimes)/(max(csew$all_crimes)-min(csew$all_crimes))
 
 # Estimate model for Metropolitan Areas only (excluding London).
-csewNW <- csew %>% filter(ladtype == 2)
-model_NW_crimes <- glm.nb(all_crimes ~ age + sex + reseth + remploy + educat2 + marsta + cry2 + emdidec3, data = csewNW)
-summary(model_NW_crimes)
+csewMet <- csew %>% filter(ladtype == 2)
+model_met_crimes <- glm.nb(all_crimes ~ age + sex + reseth + remploy + educat2 + marsta + cry2 + emdidec3, data = csewMet)
+summary(model_met_crimes)
+rsq.n(model_met_crimes)
+RMSE(model_met_crimes)/(max(csewMet$all_crimes)-min(csewMet$all_crimes))
 
 # Combine estimates for each crime type, assigning to a vector.
 # Vehicle crime
@@ -1260,6 +1264,21 @@ mi_ward_df <- ward_compare_df %>%
 
 # Empirical evaluation of simulated dataset from CSEW data
 
+# Count crimes in units.
+syn_res_units <- Data_crimes %>%
+  group_by(ID) %>%
+  summarise(vehicle.a = sum(vehicle),
+            residence.a = sum(residence),
+            theft.a = sum(theft),
+            violence.a = sum(violence))
+
+# Merge crimes in units with synthetic population.
+syn_res_OA <- left_join(syn_res_OA, syn_res_units, by = "ID")
+
+# Replace NAs with 0.
+syn_res_OA <- syn_res_OA %>%
+  mutate_at(vars(vehicle.a, residence.a, theft.a, violence.a), ~tidyr::replace_na(., 0))
+
 # Create three agre groups - CSEW data.
 csew$age_rec <- NA
 csew$age_rec[csew$age < 36] <- "less35"
@@ -1277,284 +1296,284 @@ stats::weighted.mean(x = csew$vehicle[which(csew$age_rec == "less35")],
                      w = csew$IndivWgt[which(csew$age_rec == "less35")],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$age_rec == "less35")])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$age_rec == "less35")])
 
 stats::weighted.mean(x = csew$vehicle[which(csew$age_rec == "36to55")],
                      w = csew$IndivWgt[which(csew$age_rec == "36to55")],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$age_rec == "36to55")])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$age_rec == "36to55")])
 
 stats::weighted.mean(x = csew$vehicle[which(csew$age_rec == "56more")],
                      w = csew$IndivWgt[which(csew$age_rec == "56more")],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$age_rec == "56more")])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$age_rec == "56more")])
 
 # Mean of vehicle crime victimisations by sex.
 stats::weighted.mean(x = csew$vehicle[which(csew$sex == 1)],
                      w = csew$IndivWgt[which(csew$sex == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$Male == 1)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$Male == 1)])
 
 stats::weighted.mean(x = csew$vehicle[which(csew$sex == 0)],
                      w = csew$IndivWgt[which(csew$sex == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$Male == 0)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$Male == 0)])
 
 # Mean of vehicle crime victimisations by ethnicity.
 stats::weighted.mean(x = csew$vehicle[which(csew$reseth == 1)],
                      w = csew$IndivWgt[which(csew$reseth == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$White == 1)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$White == 1)])
 
 stats::weighted.mean(x = csew$vehicle[which(csew$reseth == 0)],
                      w = csew$IndivWgt[which(csew$reseth == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$White == 0)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$White == 0)])
 
 # Mean of vehicle crime victimisations by employment status.
 stats::weighted.mean(x = csew$vehicle[which(csew$remploy == 1)],
                      w = csew$IndivWgt[which(csew$remploy == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$No_income == 1)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$No_income == 1)])
 
 stats::weighted.mean(x = csew$vehicle[which(csew$remploy == 0)],
                      w = csew$IndivWgt[which(csew$remploy == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$No_income == 0)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$No_income == 0)])
 
 # Mean of vehicle crime victimisations by education level.
 stats::weighted.mean(x = csew$vehicle[which(csew$educat2 == 1)],
                      w = csew$IndivWgt[which(csew$educat2 == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$High_edu == 1)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$High_edu == 1)])
 
 stats::weighted.mean(x = csew$vehicle[which(csew$educat2 == 0)],
                      w = csew$IndivWgt[which(csew$educat2 == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$High_edu == 0)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$High_edu == 0)])
 
 # Mean of residence crime victimisations by age.
 stats::weighted.mean(x = csew$residence[which(csew$age_rec == "less35")],
                      w = csew$IndivWgt[which(csew$age_rec == "less35")],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$age_rec == "less35")])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$age_rec == "less35")])
 
 stats::weighted.mean(x = csew$residence[which(csew$age_rec == "36to55")],
                      w = csew$IndivWgt[which(csew$age_rec == "36to55")],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$age_rec == "36to55")])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$age_rec == "36to55")])
 
 stats::weighted.mean(x = csew$residence[which(csew$age_rec == "56more")],
                      w = csew$IndivWgt[which(csew$age_rec == "56more")],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$age_rec == "56more")])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$age_rec == "56more")])
 
 # Mean of residence crime victimisations by sex.
 stats::weighted.mean(x = csew$residence[which(csew$sex == 1)],
                      w = csew$IndivWgt[which(csew$sex == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$Male == 1)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$Male == 1)])
 
 stats::weighted.mean(x = csew$residence[which(csew$sex == 0)],
                      w = csew$IndivWgt[which(csew$sex == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$Male == 0)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$Male == 0)])
 
 # Mean of residence crime victimisations by ethnicity.
 stats::weighted.mean(x = csew$residence[which(csew$reseth == 1)],
                      w = csew$IndivWgt[which(csew$reseth == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$White == 1)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$White == 1)])
 
 stats::weighted.mean(x = csew$residence[which(csew$reseth == 0)],
                      w = csew$IndivWgt[which(csew$reseth == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$White == 0)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$White == 0)])
 
 # Mean of residence crime victimisations by employment status.
 stats::weighted.mean(x = csew$residence[which(csew$remploy == 1)],
                      w = csew$IndivWgt[which(csew$remploy == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$No_income == 1)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$No_income == 1)])
 
 stats::weighted.mean(x = csew$residence[which(csew$remploy == 0)],
                      w = csew$IndivWgt[which(csew$remploy == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$No_income == 0)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$No_income == 0)])
 
 # Mean of residence crime victimisations by education level.
 stats::weighted.mean(x = csew$residence[which(csew$educat2 == 1)],
                      w = csew$IndivWgt[which(csew$educat2 == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$High_edu == 1)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$High_edu == 1)])
 
 stats::weighted.mean(x = csew$residence[which(csew$educat2 == 0)],
                      w = csew$IndivWgt[which(csew$educat2 == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$High_edu == 0)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$High_edu == 0)])
 
 # Mean of property crime victimisations by age.
 stats::weighted.mean(x = csew$theft[which(csew$age_rec == "less35")],
                      w = csew$IndivWgt[which(csew$age_rec == "less35")],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$age_rec == "less35")])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$age_rec == "less35")])
 
 stats::weighted.mean(x = csew$theft[which(csew$age_rec == "36to55")],
                      w = csew$IndivWgt[which(csew$age_rec == "36to55")],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$age_rec == "36to55")])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$age_rec == "36to55")])
 
 stats::weighted.mean(x = csew$theft[which(csew$age_rec == "56more")],
                      w = csew$IndivWgt[which(csew$age_rec == "56more")],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$age_rec == "56more")])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$age_rec == "56more")])
 
 # Mean of property crime victimisations by sex.
 stats::weighted.mean(x = csew$theft[which(csew$sex == 1)],
                      w = csew$IndivWgt[which(csew$sex == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$Male == 1)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$Male == 1)])
 
 stats::weighted.mean(x = csew$theft[which(csew$sex == 0)],
                      w = csew$IndivWgt[which(csew$sex == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$Male == 0)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$Male == 0)])
 
 # Mean of property crime victimisations by ethnic group.
 stats::weighted.mean(x = csew$theft[which(csew$reseth == 1)],
                      w = csew$IndivWgt[which(csew$reseth == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$White == 1)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$White == 1)])
 
 stats::weighted.mean(x = csew$theft[which(csew$reseth == 0)],
                      w = csew$IndivWgt[which(csew$reseth == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$White == 0)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$White == 0)])
 
 # Mean of property crime victimisations by employment status.
 stats::weighted.mean(x = csew$theft[which(csew$remploy == 1)],
                      w = csew$IndivWgt[which(csew$remploy == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$No_income == 1)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$No_income == 1)])
 
 stats::weighted.mean(x = csew$theft[which(csew$remploy == 0)],
                      w = csew$IndivWgt[which(csew$remploy == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$No_income == 0)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$No_income == 0)])
 
 # Mean of property crime victimisations by education level.
 stats::weighted.mean(x = csew$theft[which(csew$educat2 == 1)],
                      w = csew$IndivWgt[which(csew$educat2 == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$High_edu == 1)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$High_edu == 1)])
 
 stats::weighted.mean(x = csew$theft[which(csew$educat2 == 0)],
                      w = csew$IndivWgt[which(csew$educat2 == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$High_edu == 0)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$High_edu == 0)])
 
 # Mean of violent crime victimisations by age.
 stats::weighted.mean(x = csew$violence[which(csew$age_rec == "less35")],
                      w = csew$IndivWgt[which(csew$age_rec == "less35")],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$age_rec == "less35")])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$age_rec == "less35")])
 
 stats::weighted.mean(x = csew$violence[which(csew$age_rec == "36to55")],
                      w = csew$IndivWgt[which(csew$age_rec == "36to55")],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$age_rec == "36to55")])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$age_rec == "36to55")])
 
 stats::weighted.mean(x = csew$violence[which(csew$age_rec == "56more")],
                      w = csew$IndivWgt[which(csew$age_rec == "56more")],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$age_rec == "56more")])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$age_rec == "56more")])
 
 # Mean of violent crime victimisations by sex.
 stats::weighted.mean(x = csew$violence[which(csew$sex == 1)],
                      w = csew$IndivWgt[which(csew$sex == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$Male == 1)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$Male == 1)])
 
 stats::weighted.mean(x = csew$violence[which(csew$sex == 0)],
                      w = csew$IndivWgt[which(csew$sex == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$Male == 0)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$Male == 0)])
 
 # Mean of violent crime victimisations by ethnic group.
 stats::weighted.mean(x = csew$violence[which(csew$reseth == 1)],
                      w = csew$IndivWgt[which(csew$reseth == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$White == 1)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$White == 1)])
 
 stats::weighted.mean(x = csew$violence[which(csew$reseth == 0)],
                      w = csew$IndivWgt[which(csew$reseth == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$White == 0)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$White == 0)])
 
 # Mean of violent crime victimisations by employment status.
 stats::weighted.mean(x = csew$violence[which(csew$remploy == 1)],
                      w = csew$IndivWgt[which(csew$remploy == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$No_income == 1)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$No_income == 1)])
 
 stats::weighted.mean(x = csew$violence[which(csew$remploy == 0)],
                      w = csew$IndivWgt[which(csew$remploy == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$No_income == 0)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$No_income == 0)])
 
 # Mean of violent crime victimisations by education level.
 stats::weighted.mean(x = csew$violence[which(csew$educat2 == 1)],
                      w = csew$IndivWgt[which(csew$educat2 == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$High_edu == 1)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$High_edu == 1)])
 
 stats::weighted.mean(x = csew$violence[which(csew$educat2 == 0)],
                      w = csew$IndivWgt[which(csew$educat2 == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$High_edu == 0)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$High_edu == 0)])
 
 # Create three age groups for vehicle crime dataset.
 csew_vf_vehicle$age_rec <- NA
