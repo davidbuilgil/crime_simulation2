@@ -235,6 +235,13 @@ summary(model_all_crimes)
 rsq.n(model_all_crimes)
 RMSE(model_all_crimes)/(max(csew$all_crimes)-min(csew$all_crimes))
 
+# Estimate model for cities only (excluding London).
+csewUrb <- csew %>% filter(ladsupgp == 1)
+model_urb_crimes <- glm.nb(all_crimes ~ age + sex + reseth + remploy + educat2 + marsta + cry2 + emdidec3, data = csewUrb)
+summary(model_urb_crimes)
+rsq.n(model_urb_crimes)
+RMSE(model_urb_crimes)/(max(csewUrb$all_crimes)-min(csewUrb$all_crimes))
+
 # Estimate model for Metropolitan Areas only (excluding London).
 csewMet <- csew %>% filter(ladtype == 2)
 model_met_crimes <- glm.nb(all_crimes ~ age + sex + reseth + remploy + educat2 + marsta + cry2 + emdidec3, data = csewMet)
