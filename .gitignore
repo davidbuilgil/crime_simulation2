@@ -1,4 +1,7 @@
-.Rproj.user
-.Rhistory
-*.RData
+# Ignore these file types:
+!*.Rhistory
+!*.RData
+
+
 .Ruserdata
+.Rproj.user
