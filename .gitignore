@@ -1,6 +1,7 @@
 # Ignore these file types:
 .Rhistory
 data/*.RData
+*.RData
 
 
 .Ruserdata
