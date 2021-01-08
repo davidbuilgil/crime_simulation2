@@ -69,6 +69,10 @@ Search for "Crime Survey for England and Wales 2011-2012" on the [UK Data Servic
 POLICE RECORDED CRIME  
 Police recorded crime data for Greater Manchester Police can be obtained from the [open data portal](https://data.police.uk/data/). The time period is selected via the dropdown menus, and police force selected using tickboxes. Files are downloaded month-by-month in .csv format.
 
+SHAPEFILES  
+Boundaries for the relevant geographic scales can be downloaded from the [UK Data Service](https://census.ukdataservice.ac.uk/get-data/boundary-data.aspx) (generalised and clipped), apart from Wards, which we downloaded from the [open government geoportal](http://geoportal.statistics.gov.uk/datasets/wards-december-2018-generalised-clipped-boundaries-gb) (generalised and clipped).
+
+IMD  
 Index of Multiple Deprivation 2010 data are downlaoded from the file 'English IMD 2010 mapped onto 2011 LSOAs' published by the [Consumer Data Research Centre](https://data.cdrc.ac.uk/dataset/index-multiple-deprivation-imd).
 
 _Script run guide_.
