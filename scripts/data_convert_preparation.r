@@ -7,7 +7,7 @@ library(dplyr)
 
 # Convert CSEW files from .sav to .Rdata and remove haven labels
 
-# Load in SPSS data (not stored on github because too large - see data descriptions).
+# Load in SPSS data (see data descriptions on the GitHub README).
 csew    <- read_spss(file = here("data","csew_apr11mar12_nvf.sav"))
 csew_vf <- read_spss(file = here("data","csew_apr11mar12_vf.sav"))
 

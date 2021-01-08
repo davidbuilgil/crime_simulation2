@@ -1,5 +1,6 @@
 # Ignore these file types:
-.Rhistory
+*.Rhistory
+scripts/*.Rhistory
 data/*.RData
 *.RData
 
