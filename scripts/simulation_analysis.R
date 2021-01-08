@@ -84,7 +84,7 @@ syn_res_OA <- left_join(syn_res_OA, Income_by_OA_Manchester, by = "OA")
 syn_res_OA <- syn_res_OA %>% 
   mutate(No_income = rbinom(n = N, size = 1, prob = mean_no_income)) %>%
   select(ID, OA, Age, Male, White, No_income)
-  
+
 # Load data on education.
 Edu_by_OA_Manchester <- read_csv(here("data","Edu_by_OA_Manchester_replicate.csv"))
 
@@ -97,14 +97,51 @@ syn_res_OA <- syn_res_OA %>%
   select(ID, OA, Age, Male, White, No_income, High_edu)
 
 # Load data on marriage status.
+Marriage_by_OA_Manchester <- read_csv(here("data","Marriage_by_OA_Manchester_replicate.csv"))
 
+# Join the OA-level marriage data with the synthetic individual-level data.
+syn_res_OA <- left_join(syn_res_OA, Marriage_by_OA_Manchester, by = "OA")
+
+# Create education for resident (Level 4 or not) based on this distribution.
+syn_res_OA <- syn_res_OA %>% 
+  mutate(Married = rbinom(n = N, size = 1, prob = Mean_married)) %>%
+  select(ID, OA, Age, Male, White, No_income, High_edu, Married)
 
 # Load data on country of birth.
+BornUK_by_OA_Manchester <- read_csv(here("data","BornUK_by_OA_Manchester_replicate.csv"))
 
+# Join the OA-level country of birth data with the synthetic individual-level data.
+syn_res_OA <- left_join(syn_res_OA, BornUK_by_OA_Manchester, by = "OA")
 
+# Create education for resident (Level 4 or not) based on this distribution.
+syn_res_OA <- syn_res_OA %>% 
+  mutate(BornUK = rbinom(n = N, size = 1, prob = Mean_bornUK)) %>%
+  select(ID, OA, Age, Male, White, No_income, High_edu, Married, BornUK)
 
+# Load IMD data.
+IMD <- read_csv(here("data", "imd2010englsoa2011.csv"))
 
+# Select columns in IMD data, reorder by IMD rank and calculate decile.
+IMD <- IMD %>%
+  select(LSOA11CD, `National decile2`, imd_rank) %>%
+  rename(decile = 2) %>%
+  arrange(imd_rank)
 
+# Load in census unit look-up table (OA, LSOA, MSOA, LAD).
+OA_to_LAD <- read_csv(here("data","Output_Area_to_Lower_Layer_Super_Output_Area_to_Middle_Layer_Super_Output_Area_to_Local_Authority_District_December_2017_Lookup_in_Great_Britain__Classification_Version_2.csv"))
+
+# Select columns in look-up table.
+OA_to_LAD <- OA_to_LAD %>%
+  select(OA11CD, LSOA11CD)
+
+# Merge IMD data to OAs.
+OA_to_LAD <- left_join(OA_to_LAD, IMD, by = "LSOA11CD")
+
+# Add IMD data to synthetic data.
+syn_res_OA <- syn_res_OA %>%
+  left_join(OA_to_LAD, by = c("OA" = "OA11CD")) %>%
+  select(-LSOA11CD, -imd_rank) %>%
+  rename(IMD_rank = 10)
 
 # Load in CSEW nvf data
 load(here("data","csew_apr11mar12_nvf.Rdata"))
@@ -138,6 +175,18 @@ csew <- csew %>%
   mutate(educat2 = ifelse(test = educat2 > 10, yes = NA, no = educat2),
          educat2 = if_else(condition = educat2 == 1 | educat2 == 2 | educat2 == 3, true = 1, false = 0))
 
+# Missings for some marsta categories, and recode.
+# `ifelse()` used for missings as it handles NA (unlike if_else).
+csew <- csew %>% 
+  mutate(marsta = ifelse(test = marsta > 7, yes = NA, no = marsta),
+         marsta = if_else(condition = marsta == 2 | marsta == 3, true = 1, false = 0))
+
+# Missings for some cry2 categories, and recode.
+# `ifelse()` used for missings as it handles NA (unlike if_else).
+csew <- csew %>% 
+  mutate(cry2 = ifelse(test = cry2 > 7, yes = NA, no = cry2),
+         cry2 = if_else(condition = cry2 == 1 | cry2 == 2 | cry2 == 3 | cry2 == 4 | cry2 == 5, true = 1, false = 0))
+
 # Data handling to crime categories: replace missings with zeros and then sum to create new categories.
 csew <- csew %>% 
   replace_na(replace = list(nmotthef = 0, nmotstol = 0, ncardam  = 0, nbikthef = 0,
@@ -149,7 +198,7 @@ csew <- csew %>%
                             nhhldvio = 0)) %>% 
   mutate(vehicle    = nmotthef + nmotstol + ncardam,
          residence  = nprevthe + nprevdam + nprevtry + nprevsto + nproside + nprdefac +
-                      nhomthef + nyrhthef + nyrhodam + nyrhotry + nyrhosto + nyroside + nyrdefac,
+           nhomthef + nyrhthef + nyrhodam + nyrhotry + nyrhosto + nyroside + nyrdefac,
          theft      = npersth  + ntrypers + noththef + nbikthef,
          theft_dam  = theft    + ndelibda,
          violence   = ndelibv  + nthrevio  + nsexatt + nhhldvio,
@@ -157,32 +206,48 @@ csew <- csew %>%
 
 # Run negative binomial models to generate estimates from CSEW.
 
-model_vehicle <- glm.nb(vehicle ~ age + sex + reseth + remploy + educat2, data = csew)
+model_vehicle <- glm.nb(vehicle ~ age + sex + reseth + remploy + educat2 + marsta + cry2 + emdidec3, data = csew)
 summary(model_vehicle)
 #PseudoR2(model_vehicle)
 rsq.n(model_vehicle)
 RMSE(model_vehicle)/(max(csew$vehicle)-min(csew$vehicle))
 
-model_residence <- glm.nb(residence ~ age + sex + reseth + remploy + educat2, data = csew)
+model_residence <- glm.nb(residence ~ age + sex + reseth + remploy + educat2 + marsta + cry2 + emdidec3, data = csew)
 summary(model_residence)
 #PseudoR2(model_residence)
 rsq.n(model_residence)
 RMSE(model_residence)/(max(csew$residence)-min(csew$residence))
 
-model_theft <- glm.nb(theft ~ age + sex + reseth + remploy + educat2, data = csew)
+model_theft <- glm.nb(theft ~ age + sex + reseth + remploy + educat2 + marsta + cry2 + emdidec3, data = csew)
 summary(model_theft)
 #PseudoR2(model_theft)
 rsq.n(model_theft)
 RMSE(model_theft)/(max(csew$theft)-min(csew$theft))
 
-model_violence <- glm.nb(violence ~ age + sex + reseth + remploy + educat2, data = csew)
+model_violence <- glm.nb(violence ~ age + sex + reseth + remploy + educat2 + marsta + cry2 + emdidec3, data = csew)
 summary(model_violence)
 #PseudoR2(model_violence)
 rsq.n(model_violence)
 RMSE(model_violence)/(max(csew$violence)-min(csew$violence))
 
-model_all_crimes <- glm.nb(all_crimes ~ age + sex + reseth + remploy + educat2, data = csew)
+model_all_crimes <- glm.nb(all_crimes ~ age + sex + reseth + remploy + educat2 + marsta + cry2 + emdidec3, data = csew)
 summary(model_all_crimes)
+rsq.n(model_all_crimes)
+RMSE(model_all_crimes)/(max(csew$all_crimes)-min(csew$all_crimes))
+
+# Estimate model for cities only (excluding London).
+csewUrb <- csew %>% filter(ladsupgp == 1)
+model_urb_crimes <- glm.nb(all_crimes ~ age + sex + reseth + remploy + educat2 + marsta + cry2 + emdidec3, data = csewUrb)
+summary(model_urb_crimes)
+rsq.n(model_urb_crimes)
+RMSE(model_urb_crimes)/(max(csewUrb$all_crimes)-min(csewUrb$all_crimes))
+
+# Estimate model for Metropolitan Areas only (excluding London).
+csewMet <- csew %>% filter(ladtype == 2)
+model_met_crimes <- glm.nb(all_crimes ~ age + sex + reseth + remploy + educat2 + marsta + cry2 + emdidec3, data = csewMet)
+summary(model_met_crimes)
+rsq.n(model_met_crimes)
+RMSE(model_met_crimes)/(max(csewMet$all_crimes)-min(csewMet$all_crimes))
 
 # Combine estimates for each crime type, assigning to a vector.
 # Vehicle crime
@@ -191,7 +256,10 @@ eta_vehicle <- model_vehicle$coefficients[1] +
   syn_res_OA$Male * model_vehicle$coefficients[3] +
   syn_res_OA$White * model_vehicle$coefficients[4] +
   syn_res_OA$No_income * model_vehicle$coefficients[5] +
-  syn_res_OA$High_edu * model_vehicle$coefficients[6]
+  syn_res_OA$High_edu * model_vehicle$coefficients[6] +
+  syn_res_OA$Married * model_vehicle$coefficients[7] +
+  syn_res_OA$BornUK * model_vehicle$coefficients[8] +
+  syn_res_OA$IMD_rank * model_vehicle$coefficients[9]
 
 # Residence crime 
 eta_residence <- model_residence$coefficients[1] +
@@ -199,7 +267,10 @@ eta_residence <- model_residence$coefficients[1] +
   syn_res_OA$Male * model_residence$coefficients[3] +
   syn_res_OA$White * model_residence$coefficients[4] +
   syn_res_OA$No_income * model_residence$coefficients[5] +
-  syn_res_OA$High_edu * model_residence$coefficients[6]
+  syn_res_OA$High_edu * model_residence$coefficients[6]  +
+  syn_res_OA$Married * model_residence$coefficients[7] +
+  syn_res_OA$BornUK * model_residence$coefficients[8] +
+  syn_res_OA$IMD_rank * model_residence$coefficients[9]
 
 # Theft crime
 eta_theft <- model_theft$coefficients[1] +
@@ -207,7 +278,10 @@ eta_theft <- model_theft$coefficients[1] +
   syn_res_OA$Male * model_theft$coefficients[3] +
   syn_res_OA$White * model_theft$coefficients[4] +
   syn_res_OA$No_income * model_theft$coefficients[5] +
-  syn_res_OA$High_edu * model_theft$coefficients[6]
+  syn_res_OA$High_edu * model_theft$coefficients[6] +
+  syn_res_OA$Married * model_theft$coefficients[7] +
+  syn_res_OA$BornUK * model_theft$coefficients[8] +
+  syn_res_OA$IMD_rank * model_theft$coefficients[9]
 
 # Violent crime
 eta_violence <- model_violence$coefficients[1] +
@@ -215,7 +289,10 @@ eta_violence <- model_violence$coefficients[1] +
   syn_res_OA$Male * model_violence$coefficients[3] +
   syn_res_OA$White * model_violence$coefficients[4] +
   syn_res_OA$No_income * model_violence$coefficients[5] +
-  syn_res_OA$High_edu * model_violence$coefficients[6]
+  syn_res_OA$High_edu * model_violence$coefficients[6] +
+  syn_res_OA$Married * model_violence$coefficients[7] +
+  syn_res_OA$BornUK * model_violence$coefficients[8] +
+  syn_res_OA$IMD_rank * model_violence$coefficients[9]
 
 # Create distributions based on these estimates for the synthetic individual data.
 syn_res_OA <-  syn_res_OA %>% 
@@ -297,7 +374,7 @@ csew_vf <- csew_vf %>%
   mutate(victarea = if_else(condition = victarea == 2, true = 0, false = victarea),
          victarea = na_if(x = victarea, 8),
          victarea = na_if(x = victarea, 9))
-  
+
 # Filter vehicle crime types.
 csew_vf_vehicle <-  csew_vf %>% 
   filter(crimtype == 1 | crimtype == 2 | crimtype == 3)
@@ -305,9 +382,9 @@ csew_vf_vehicle <-  csew_vf %>%
 # Filter residence crime type.
 csew_vf_residence <-  csew_vf %>% 
   filter(crimtype == 5  | crimtype == 6  | crimtype == 7  | crimtype == 8  |
-         crimtype == 9  | crimtype == 10 | crimtype == 11 | crimtype == 12 |
-         crimtype == 13 | crimtype == 14 | crimtype == 15 | crimtype == 16 |
-         crimtype == 17)
+           crimtype == 9  | crimtype == 10 | crimtype == 11 | crimtype == 12 |
+           crimtype == 13 | crimtype == 14 | crimtype == 15 | crimtype == 16 |
+           crimtype == 17)
 
 # Filter theft crime type.
 csew_vf_theft <-  csew_vf %>% 
@@ -318,7 +395,7 @@ csew_vf_violence <-  csew_vf %>%
   filter(crimtype == 22 | crimtype == 23 | crimtype == 24 | crimtype == 25)
 
 # Create GLM formula for predicting copsknow (dep. var.) with demographic variables (ind. var.).
-glm_copsknow <- copsknow ~ age + sex + reseth + remploy + educat2
+glm_copsknow <- copsknow ~ age + sex + reseth + remploy + educat2 + marsta + cry2 + emdidec3
 
 # Vehicle model.
 model_repo_vehicle <- glm(formula = glm_copsknow, family = binomial(link = "logit"), data = csew_vf_vehicle)
@@ -347,17 +424,20 @@ rsq.n(model_repo_vehicle)
 # Extract estimates for vehicle crime.
 Data_vehicle <- Data_vehicle %>% 
   mutate(estimates = model_repo_vehicle$coefficients[1] +
-                     Data_vehicle$Age       * model_repo_vehicle$coefficients[2] +
-                     Data_vehicle$Male      * model_repo_vehicle$coefficients[3] +
-                     Data_vehicle$White     * model_repo_vehicle$coefficients[4] +
-                     Data_vehicle$No_income * model_repo_vehicle$coefficients[5] +
-                     Data_vehicle$High_edu  * model_repo_vehicle$coefficients[6],
+           Data_vehicle$Age       * model_repo_vehicle$coefficients[2] +
+           Data_vehicle$Male      * model_repo_vehicle$coefficients[3] +
+           Data_vehicle$White     * model_repo_vehicle$coefficients[4] +
+           Data_vehicle$No_income * model_repo_vehicle$coefficients[5] +
+           Data_vehicle$High_edu  * model_repo_vehicle$coefficients[6] +
+           Data_vehicle$Married   * model_repo_vehicle$coefficients[7] +
+           Data_vehicle$BornUK    * model_repo_vehicle$coefficients[8] +
+           Data_vehicle$IMD_rank  * model_repo_vehicle$coefficients[9],
          exp_estimates = exp(estimates) / (1 + exp(estimates)),
          copsknow = rbinom(nrow(Data_vehicle), 1, exp_estimates))
 
 # Check vehicle frequency distributions comparison.
-table(csew_vf_vehicle$copsknow)
-table(Data_vehicle$copsknow)
+prop.table(table(csew_vf_vehicle$copsknow))
+prop.table(table(Data_vehicle$copsknow))
 
 # Extract estimates for residence crime.
 Data_residence <- Data_residence %>% 
@@ -366,13 +446,16 @@ Data_residence <- Data_residence %>%
            Data_residence$Male      * model_repo_residence$coefficients[3] +
            Data_residence$White     * model_repo_residence$coefficients[4] +
            Data_residence$No_income * model_repo_residence$coefficients[5] +
-           Data_residence$High_edu  * model_repo_residence$coefficients[6],
+           Data_residence$High_edu  * model_repo_residence$coefficients[6] +
+           Data_residence$Married   * model_repo_residence$coefficients[7] +
+           Data_residence$BornUK    * model_repo_residence$coefficients[8] +
+           Data_residence$IMD_rank  * model_repo_residence$coefficients[9],
          exp_estimates = exp(estimates) / (1 + exp(estimates)),
          copsknow = rbinom(nrow(Data_residence), 1, exp_estimates))
 
 # Check residence frequency distrbibutions comparison.
-table(csew_vf_residence$copsknow)
-table(Data_residence$copsknow)
+prop.table(table(csew_vf_residence$copsknow))
+prop.table(table(Data_residence$copsknow))
 
 # Extract theft for residence crime.
 Data_theft <- Data_theft %>% 
@@ -381,13 +464,16 @@ Data_theft <- Data_theft %>%
            Data_theft$Male      * model_repo_theft$coefficients[3] +
            Data_theft$White     * model_repo_theft$coefficients[4] +
            Data_theft$No_income * model_repo_theft$coefficients[5] +
-           Data_theft$High_edu  * model_repo_theft$coefficients[6],
+           Data_theft$High_edu  * model_repo_theft$coefficients[6] +
+           Data_theft$Married   * model_repo_theft$coefficients[7] +
+           Data_theft$BornUK    * model_repo_theft$coefficients[8] +
+           Data_theft$IMD_rank  * model_repo_theft$coefficients[9],
          exp_estimates = exp(estimates) / (1 + exp(estimates)),
          copsknow = rbinom(nrow(Data_theft), 1, exp_estimates))
 
 # Check theft frequency distrbibutions comparison.
-table(csew_vf_theft$copsknow)
-table(Data_theft$copsknow)
+prop.table(table(csew_vf_theft$copsknow))
+prop.table(table(Data_theft$copsknow))
 
 # Extract violence for residence crime.
 Data_violence <- Data_violence %>% 
@@ -396,16 +482,19 @@ Data_violence <- Data_violence %>%
            Data_violence$Male      * model_repo_violence$coefficients[3] +
            Data_violence$White     * model_repo_violence$coefficients[4] +
            Data_violence$No_income * model_repo_violence$coefficients[5] +
-           Data_violence$High_edu  * model_repo_violence$coefficients[6],
+           Data_violence$High_edu  * model_repo_violence$coefficients[6] +
+           Data_violence$Married   * model_repo_violence$coefficients[7] +
+           Data_violence$BornUK    * model_repo_violence$coefficients[8] +
+           Data_violence$IMD_rank  * model_repo_violence$coefficients[9],
          exp_estimates = exp(estimates) / (1 + exp(estimates)),
          copsknow = rbinom(nrow(Data_violence), 1, exp_estimates))
 
 # Check violence frequency distrbibutions comparison.
-table(csew_vf_violence$copsknow)
-table(Data_violence$copsknow)
+prop.table(table(csew_vf_violence$copsknow))
+prop.table(table(Data_violence$copsknow))
 
 # Create GLM formula for predicting victarea (dep. var.) with demographic variables (ind. var.).
-glm_victarea <- victarea ~ age + sex + reseth + remploy + educat2
+glm_victarea <- victarea ~ age + sex + reseth + remploy + educat2 + marsta + cry2 + emdidec3
 
 # Vehicle model.
 model_area_vehicle <- glm(formula = glm_victarea, family = binomial(link = "logit"), data = csew_vf_vehicle)
@@ -438,13 +527,16 @@ Data_vehicle <- Data_vehicle %>%
            Data_vehicle$Male      * model_area_vehicle$coefficients[3] +
            Data_vehicle$White     * model_area_vehicle$coefficients[4] +
            Data_vehicle$No_income * model_area_vehicle$coefficients[5] +
-           Data_vehicle$High_edu  * model_area_vehicle$coefficients[6],
+           Data_vehicle$High_edu  * model_area_vehicle$coefficients[6] +
+           Data_vehicle$Married   * model_area_vehicle$coefficients[7] +
+           Data_vehicle$BornUK    * model_area_vehicle$coefficients[8] +
+           Data_vehicle$IMD_rank  * model_area_vehicle$coefficients[9],
          exp_estimates = exp(estimates) / (1 + exp(estimates)),
          victarea = rbinom(nrow(Data_vehicle), 1, exp_estimates))
 
 # Check vehicle frequency distributions comparison.
-table(csew_vf_vehicle$victarea)
-table(Data_vehicle$victarea)
+prop.table(table(csew_vf_vehicle$victarea))
+prop.table(table(Data_vehicle$victarea))
 
 # Extract estimates for residence crime.
 Data_residence <- Data_residence %>% 
@@ -453,13 +545,16 @@ Data_residence <- Data_residence %>%
            Data_residence$Male      * model_area_residence$coefficients[3] +
            Data_residence$White     * model_area_residence$coefficients[4] +
            Data_residence$No_income * model_area_residence$coefficients[5] +
-           Data_residence$High_edu  * model_area_residence$coefficients[6],
+           Data_residence$High_edu  * model_area_residence$coefficients[6]  +
+           Data_residence$Married   * model_area_residence$coefficients[7] +
+           Data_residence$BornUK    * model_area_residence$coefficients[8] +
+           Data_residence$IMD_rank  * model_area_residence$coefficients[9],
          exp_estimates = exp(estimates) / (1 + exp(estimates)),
          victarea = rbinom(nrow(Data_residence), 1, exp_estimates))
 
 # Check residence frequency distrbibutions comparison.
-table(csew_vf_residence$victarea)
-table(Data_residence$victarea)
+prop.table(table(csew_vf_residence$victarea))
+prop.table(table(Data_residence$victarea))
 
 # Extract theft for residence crime.
 Data_theft <- Data_theft %>% 
@@ -468,13 +563,16 @@ Data_theft <- Data_theft %>%
            Data_theft$Male      * model_area_theft$coefficients[3] +
            Data_theft$White     * model_area_theft$coefficients[4] +
            Data_theft$No_income * model_area_theft$coefficients[5] +
-           Data_theft$High_edu  * model_area_theft$coefficients[6],
+           Data_theft$High_edu  * model_area_theft$coefficients[6] +
+           Data_theft$Married   * model_area_theft$coefficients[7] +
+           Data_theft$BornUK    * model_area_theft$coefficients[8] +
+           Data_theft$IMD_rank  * model_area_theft$coefficients[9],
          exp_estimates = exp(estimates) / (1 + exp(estimates)),
          victarea = rbinom(nrow(Data_theft), 1, exp_estimates))
 
 # Check theft frequency distrbibutions comparison.
-table(csew_vf_theft$victarea)
-table(Data_theft$victarea)
+prop.table(table(csew_vf_theft$victarea))
+prop.table(table(Data_theft$victarea))
 
 # Extract violence for residence crime.
 Data_violence <- Data_violence %>% 
@@ -483,13 +581,16 @@ Data_violence <- Data_violence %>%
            Data_violence$Male      * model_area_violence$coefficients[3] +
            Data_violence$White     * model_area_violence$coefficients[4] +
            Data_violence$No_income * model_area_violence$coefficients[5] +
-           Data_violence$High_edu  * model_area_violence$coefficients[6],
+           Data_violence$High_edu  * model_area_violence$coefficients[6] +
+           Data_violence$Married   * model_area_violence$coefficients[7] +
+           Data_violence$BornUK    * model_area_violence$coefficients[8] +
+           Data_violence$IMD_rank  * model_area_violence$coefficients[9],
          exp_estimates = exp(estimates) / (1 + exp(estimates)),
          victarea = rbinom(nrow(Data_violence), 1, exp_estimates))
 
 # Check violence frequency distrbibutions comparison.
-table(csew_vf_violence$victarea)
-table(Data_violence$victarea)
+prop.table(table(csew_vf_violence$victarea))
+prop.table(table(Data_violence$victarea))
 
 # Row bind each crime type data frame. Involves some factor -> character coercion for binding.
 Data_crimes <- bind_rows(Data_vehicle, Data_residence, Data_theft, Data_violence)
@@ -559,11 +660,11 @@ crimes_known_agg_list <- lapply(crimes_known_list, crimes_known_fun)
 
 # Function to tally number of crimes (estimated from CSEW) per unit.
 crimes_fun <- function(x){
-x %>%
-  group_by(unit)%>%
-  tally() %>%
-  ungroup() %>% 
-  rename(all_crimes = n)
+  x %>%
+    group_by(unit)%>%
+    tally() %>%
+    ungroup() %>% 
+    rename(all_crimes = n)
 }
 
 # Loop aggregation through list, so we get the crimes counts for each spatial scale.
@@ -624,9 +725,9 @@ violent_units   <- bind_rows(crimes_known_violence_full_list  , .id = "unit_type
 rd_fun <- function(x) {
   x %>%
     mutate(RD = ((known - all_crimes) / all_crimes) * 100,
-       abs_RD = abs(RD), 
-       unit_type = fct_relevel(unit_type, "OA", "LSOA", "MSOA", "WD"))
-    
+           abs_RD = abs(RD), 
+           unit_type = fct_relevel(unit_type, "OA", "LSOA", "MSOA", "WD"))
+  
 }
 
 # Compile into list and name
@@ -743,7 +844,8 @@ GMP_manc <- GMP_manc %>%
 GMP_all_list <- group_split(GMP_manc, Crime.type)
 
 # Append total crimes to the list.
-GMP_all_list <- c((GMP_all_list), list(GMP_manc))
+GMP_manc_all <- GMP_manc %>% mutate(Crime.type = "all_crimes")
+GMP_all_list <- c((GMP_all_list), group_split(GMP_manc_all, Crime.type))
 
 # Rename elements of the list (order checked manually).
 names(GMP_all_list) <- c("residence", "theft", "vehicle", "violent", "all_crimes")
@@ -840,7 +942,6 @@ oa_compare_df   <- bind_rows(oa_compare_list  , .id = "crime_type")
 lsoa_compare_df <- bind_rows(lsoa_compare_list, .id = "crime_type")
 msoa_compare_df <- bind_rows(msoa_compare_list, .id = "crime_type")
 ward_compare_df <- bind_rows(ward_compare_list, .id = "crime_type")
-
 
 # Aggregate crime data without searching points in polygons.
 # At the Output Area level.
@@ -958,7 +1059,7 @@ oa_brks <- classIntervals(oa_levels_df$abs_RD, n = 5, style="fixed",
                           fixedBreaks = c(0, 20, 40, 60, 80, 100))
 
 lsoa_brks <- classIntervals(lsoa_levels_df$abs_RD, n = 5, style="fixed",
-                          fixedBreaks = c(0, 20, 40, 60, 80, 100))
+                            fixedBreaks = c(0, 20, 40, 60, 80, 100))
 
 msoa_brks <- classIntervals(msoa_levels_df$abs_RD, n = 5, style="fixed",
                             fixedBreaks = c(0, 20, 40, 60, 80, 100))
@@ -984,12 +1085,14 @@ msoa_levels_sf <- msoa_levels_df %>%
   mutate(RD_cut = fct_recode(RD_cut, "0-20" = "[0,20]", "20-40" = "(20,40]", "40-60" = "(40,60]", "60-80" = "(60,80]", "80-100"="(80,100]"))
 table(msoa_levels_sf$RD_cut)
 
-ward_levels_sf <- ward_levels_df %>% 
+ward_levels_df2 <- ward_levels_df %>%
+  select(-geometry) %>%
+  left_join(ward_sf, by = c("unit" = "wd18cd"))
+ward_levels_sf <- ward_levels_df2 %>% 
   st_as_sf(sf_column_name = "geometry") %>% 
   mutate(RD_cut = cut(abs_RD, ward_brks$brks, include.lowest = T, dig.lab = 5)) %>% 
   mutate(RD_cut = fct_recode(RD_cut, "0-20" = "[0,20]", "20-40" = "(20,40]", "40-60" = "(40,60]", "60-80" = "(60,80]", "80-100"="(80,100]"))
 table(ward_levels_sf$RD_cut)
-
 
 # Get 5 set colours, avoiding the overly light one, so ask for 6 and get 5.
 greypal <- brewer_pal(palette = "Greys")(6)[2:6] # main
@@ -997,48 +1100,47 @@ greypal <- brewer_pal(palette = "Greys")(6)[2:6] # main
 
 # OA plot.
 p1 <- ggplot(data = oa_levels_sf) +
-    geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
-    theme_void() +
-    scale_fill_manual(values = greypal) +
-    labs(fill = "RD %", title = "OA") +
-    theme(legend.position = "none", 
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank())
+  geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
+  theme_void() +
+  scale_fill_manual(values = greypal) +
+  labs(fill = "RD %", title = "OA") +
+  theme(legend.position = "none", 
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank())
 
 # LSOA plot.
 p2 <- ggplot(data = lsoa_levels_sf) +
-    geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
-    theme_void() +
-    scale_fill_manual(values = c("#969696", "#636363")) +
-    labs(fill = "RD %", title = "LSOA") +
-    theme(legend.position = "none", 
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank())
+  geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
+  theme_void() +
+  scale_fill_manual(values = c("#969696", "#636363")) +
+  labs(fill = "RD %", title = "LSOA") +
+  theme(legend.position = "none", 
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank())
 
 # MSOA plot.  
 p3 <- ggplot(data = msoa_levels_sf) +
-    geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
-    theme_void() +
-    scale_fill_manual(values = c("#969696", "#636363")) +
-    labs(fill = "RD %", title = "MSOA") +
-    theme(legend.position = "none", 
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank())
+  geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
+  theme_void() +
+  scale_fill_manual(values = c("#969696", "#636363")) +
+  labs(fill = "RD %", title = "MSOA") +
+  theme(legend.position = "none", 
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank())
 
 # Ward plot.
 p4 <- ggplot(data = ward_levels_sf) +
-    geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
-    theme_void() +
-    scale_fill_manual(values = c("#969696", "#636363")) +
-    labs(fill = "RD %", title = "Ward") +
-    theme(legend.position = "none", 
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank())
+  geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") +
+  theme_void() +
+  scale_fill_manual(values = c("#969696", "#636363")) +
+  labs(fill = "RD %", title = "Ward") +
+  theme(legend.position = "none", 
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank())
 
 # Plot just to get legend.
 leg <- ggplot(data = oa_levels_sf) + theme_minimal() + geom_sf(mapping = aes(fill = RD_cut), colour = "transparent") + scale_fill_manual(values = greypal) + labs(fill = "RD %") + theme(legend.position = "bottom")
 leg_p <- get_legend(leg)
-
 
 # Arrange plots.
 maps_plot <- plot_grid(p1, p2, p3, p4, nrow = 1)
@@ -1121,18 +1223,18 @@ msoa_prox$neighbours
 ward_prox$neighbours
 
 # Global Morans'I.
-mi_oa_df <- oa_compare_df %>%
-  group_by(crime_type) %>%
-  summarise(mi   = lm.morantest.exact(lm(known ~ count), oa_prox)$estimate,
-            stat = lm.morantest.exact(lm(known ~ count), oa_prox)$statistic,
-            p    = lm.morantest.exact(lm(known ~ count), oa_prox)$p.value)
-mi_oa_df
+#mi_oa_df <- oa_compare_df %>%
+#  group_by(crime_type) %>%
+#  summarise(mi   = lm.morantest.exact(lm(known ~ count), oa_prox)$estimate,
+#            stat = lm.morantest.exact(lm(known ~ count), oa_prox)$statistic,
+#            p    = lm.morantest.exact(lm(known ~ count), oa_prox)$p.value)
+#mi_oa_df
 
-mi_oa_df <- oa_compare_df %>%
-  group_by(crime_type) %>%
-  summarise(mi   = lm.morantest.exact(lm(known ~ GMP_agg), oa_prox)$estimate,
-            stat = lm.morantest.exact(lm(known ~ GMP_agg), oa_prox)$statistic,
-            p    = lm.morantest.exact(lm(known ~ GMP_agg), oa_prox)$p.value)
+#mi_oa_df <- oa_compare_df %>%
+#  group_by(crime_type) %>%
+#  summarise(mi   = lm.morantest.exact(lm(known ~ GMP_agg), oa_prox)$estimate,
+#            stat = lm.morantest.exact(lm(known ~ GMP_agg), oa_prox)$statistic,
+#            p    = lm.morantest.exact(lm(known ~ GMP_agg), oa_prox)$p.value)
 
 mi_lsoa_df <- lsoa_compare_df %>%
   group_by(crime_type) %>%
@@ -1169,6 +1271,22 @@ mi_ward_df <- ward_compare_df %>%
 
 # Empirical evaluation of simulated dataset from CSEW data
 
+# Count crimes in units.
+syn_res_units <- Data_crimes %>%
+  group_by(ID) %>%
+  summarise(vehicle.a = sum(vehicle),
+            residence.a = sum(residence),
+            theft.a = sum(theft),
+            violence.a = sum(violence))
+
+# Merge crimes in units with synthetic population.
+syn_res_OA <- left_join(syn_res_OA, syn_res_units, by = "ID")
+
+# Replace NAs with 0.
+syn_res_OA <- syn_res_OA %>%
+  mutate_at(vars(vehicle.a, residence.a, theft.a, violence.a), ~tidyr::replace_na(., 0)) %>%
+  filter(Age > 16)
+
 # Create three agre groups - CSEW data.
 csew$age_rec <- NA
 csew$age_rec[csew$age < 36] <- "less35"
@@ -1186,284 +1304,464 @@ stats::weighted.mean(x = csew$vehicle[which(csew$age_rec == "less35")],
                      w = csew$IndivWgt[which(csew$age_rec == "less35")],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$age_rec == "less35")])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$age_rec == "less35")])
 
 stats::weighted.mean(x = csew$vehicle[which(csew$age_rec == "36to55")],
                      w = csew$IndivWgt[which(csew$age_rec == "36to55")],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$age_rec == "36to55")])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$age_rec == "36to55")])
 
 stats::weighted.mean(x = csew$vehicle[which(csew$age_rec == "56more")],
                      w = csew$IndivWgt[which(csew$age_rec == "56more")],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$age_rec == "56more")])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$age_rec == "56more")])
 
 # Mean of vehicle crime victimisations by sex.
 stats::weighted.mean(x = csew$vehicle[which(csew$sex == 1)],
                      w = csew$IndivWgt[which(csew$sex == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$Male == 1)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$Male == 1)])
 
 stats::weighted.mean(x = csew$vehicle[which(csew$sex == 0)],
                      w = csew$IndivWgt[which(csew$sex == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$Male == 0)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$Male == 0)])
 
 # Mean of vehicle crime victimisations by ethnicity.
 stats::weighted.mean(x = csew$vehicle[which(csew$reseth == 1)],
                      w = csew$IndivWgt[which(csew$reseth == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$White == 1)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$White == 1)])
 
 stats::weighted.mean(x = csew$vehicle[which(csew$reseth == 0)],
                      w = csew$IndivWgt[which(csew$reseth == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$White == 0)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$White == 0)])
 
 # Mean of vehicle crime victimisations by employment status.
 stats::weighted.mean(x = csew$vehicle[which(csew$remploy == 1)],
                      w = csew$IndivWgt[which(csew$remploy == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$No_income == 1)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$No_income == 1)])
 
 stats::weighted.mean(x = csew$vehicle[which(csew$remploy == 0)],
                      w = csew$IndivWgt[which(csew$remploy == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$No_income == 0)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$No_income == 0)])
 
 # Mean of vehicle crime victimisations by education level.
 stats::weighted.mean(x = csew$vehicle[which(csew$educat2 == 1)],
                      w = csew$IndivWgt[which(csew$educat2 == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$High_edu == 1)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$High_edu == 1)])
 
 stats::weighted.mean(x = csew$vehicle[which(csew$educat2 == 0)],
                      w = csew$IndivWgt[which(csew$educat2 == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$vehicle[which(syn_res_OA$High_edu == 0)])
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$High_edu == 0)])
+
+# Mean of vehicle crime victimisations by marriage status.
+stats::weighted.mean(x = csew$vehicle[which(csew$marsta == 1)],
+                     w = csew$IndivWgt[which(csew$marsta == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$Married == 1)])
+
+stats::weighted.mean(x = csew$vehicle[which(csew$marsta == 0)],
+                     w = csew$IndivWgt[which(csew$marsta == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$Married == 0)])
+
+# Mean of vehicle crime victimisations by country of birth.
+stats::weighted.mean(x = csew$vehicle[which(csew$cry2 == 1)],
+                     w = csew$IndivWgt[which(csew$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$BornUK == 1)])
+
+stats::weighted.mean(x = csew$vehicle[which(csew$cry2 == 0)],
+                     w = csew$IndivWgt[which(csew$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$BornUK == 0)])
+
+# Mean of vehicle crime victimisations by IMD deciles.
+stats::weighted.mean(x = csew$vehicle[which(csew$emdidec3 <= 3)],
+                     w = csew$IndivWgt[which(csew$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew$vehicle[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$IMD_rank > 3 & syn_res_OA$IMD_rank < 7)])
+
+stats::weighted.mean(x = csew$vehicle[which(csew$emdidec3 >= 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$vehicle.a[which(syn_res_OA$IMD_rank >= 7)])
 
 # Mean of residence crime victimisations by age.
 stats::weighted.mean(x = csew$residence[which(csew$age_rec == "less35")],
                      w = csew$IndivWgt[which(csew$age_rec == "less35")],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$age_rec == "less35")])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$age_rec == "less35")])
 
 stats::weighted.mean(x = csew$residence[which(csew$age_rec == "36to55")],
                      w = csew$IndivWgt[which(csew$age_rec == "36to55")],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$age_rec == "36to55")])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$age_rec == "36to55")])
 
 stats::weighted.mean(x = csew$residence[which(csew$age_rec == "56more")],
                      w = csew$IndivWgt[which(csew$age_rec == "56more")],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$age_rec == "56more")])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$age_rec == "56more")])
 
 # Mean of residence crime victimisations by sex.
 stats::weighted.mean(x = csew$residence[which(csew$sex == 1)],
                      w = csew$IndivWgt[which(csew$sex == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$Male == 1)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$Male == 1)])
 
 stats::weighted.mean(x = csew$residence[which(csew$sex == 0)],
                      w = csew$IndivWgt[which(csew$sex == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$Male == 0)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$Male == 0)])
 
 # Mean of residence crime victimisations by ethnicity.
 stats::weighted.mean(x = csew$residence[which(csew$reseth == 1)],
                      w = csew$IndivWgt[which(csew$reseth == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$White == 1)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$White == 1)])
 
 stats::weighted.mean(x = csew$residence[which(csew$reseth == 0)],
                      w = csew$IndivWgt[which(csew$reseth == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$White == 0)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$White == 0)])
 
 # Mean of residence crime victimisations by employment status.
 stats::weighted.mean(x = csew$residence[which(csew$remploy == 1)],
                      w = csew$IndivWgt[which(csew$remploy == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$No_income == 1)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$No_income == 1)])
 
 stats::weighted.mean(x = csew$residence[which(csew$remploy == 0)],
                      w = csew$IndivWgt[which(csew$remploy == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$No_income == 0)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$No_income == 0)])
 
 # Mean of residence crime victimisations by education level.
 stats::weighted.mean(x = csew$residence[which(csew$educat2 == 1)],
                      w = csew$IndivWgt[which(csew$educat2 == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$High_edu == 1)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$High_edu == 1)])
 
 stats::weighted.mean(x = csew$residence[which(csew$educat2 == 0)],
                      w = csew$IndivWgt[which(csew$educat2 == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$residence[which(syn_res_OA$High_edu == 0)])
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$High_edu == 0)])
+
+# Mean of residence crime victimisations by marriage status.
+stats::weighted.mean(x = csew$residence[which(csew$marsta == 1)],
+                     w = csew$IndivWgt[which(csew$marsta == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$Married == 1)])
+
+stats::weighted.mean(x = csew$residence[which(csew$marsta == 0)],
+                     w = csew$IndivWgt[which(csew$marsta == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$Married == 0)])
+
+# Mean of residence crime victimisations by country of birth.
+stats::weighted.mean(x = csew$residence[which(csew$cry2 == 1)],
+                     w = csew$IndivWgt[which(csew$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$BornUK == 1)])
+
+stats::weighted.mean(x = csew$residence[which(csew$cry2 == 0)],
+                     w = csew$IndivWgt[which(csew$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$BornUK == 0)])
+
+# Mean of residence crime victimisations by IMD deciles.
+stats::weighted.mean(x = csew$residence[which(csew$emdidec3 <= 3)],
+                     w = csew$IndivWgt[which(csew$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew$residence[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$IMD_rank > 3 & syn_res_OA$IMD_rank < 7)])
+
+stats::weighted.mean(x = csew$residence[which(csew$emdidec3 >= 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$residence.a[which(syn_res_OA$IMD_rank >= 7)])
 
 # Mean of property crime victimisations by age.
 stats::weighted.mean(x = csew$theft[which(csew$age_rec == "less35")],
                      w = csew$IndivWgt[which(csew$age_rec == "less35")],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$age_rec == "less35")])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$age_rec == "less35")])
 
 stats::weighted.mean(x = csew$theft[which(csew$age_rec == "36to55")],
                      w = csew$IndivWgt[which(csew$age_rec == "36to55")],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$age_rec == "36to55")])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$age_rec == "36to55")])
 
 stats::weighted.mean(x = csew$theft[which(csew$age_rec == "56more")],
                      w = csew$IndivWgt[which(csew$age_rec == "56more")],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$age_rec == "56more")])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$age_rec == "56more")])
 
 # Mean of property crime victimisations by sex.
 stats::weighted.mean(x = csew$theft[which(csew$sex == 1)],
                      w = csew$IndivWgt[which(csew$sex == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$Male == 1)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$Male == 1)])
 
 stats::weighted.mean(x = csew$theft[which(csew$sex == 0)],
                      w = csew$IndivWgt[which(csew$sex == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$Male == 0)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$Male == 0)])
 
 # Mean of property crime victimisations by ethnic group.
 stats::weighted.mean(x = csew$theft[which(csew$reseth == 1)],
                      w = csew$IndivWgt[which(csew$reseth == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$White == 1)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$White == 1)])
 
 stats::weighted.mean(x = csew$theft[which(csew$reseth == 0)],
                      w = csew$IndivWgt[which(csew$reseth == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$White == 0)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$White == 0)])
 
 # Mean of property crime victimisations by employment status.
 stats::weighted.mean(x = csew$theft[which(csew$remploy == 1)],
                      w = csew$IndivWgt[which(csew$remploy == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$No_income == 1)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$No_income == 1)])
 
 stats::weighted.mean(x = csew$theft[which(csew$remploy == 0)],
                      w = csew$IndivWgt[which(csew$remploy == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$No_income == 0)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$No_income == 0)])
 
 # Mean of property crime victimisations by education level.
 stats::weighted.mean(x = csew$theft[which(csew$educat2 == 1)],
                      w = csew$IndivWgt[which(csew$educat2 == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$High_edu == 1)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$High_edu == 1)])
 
 stats::weighted.mean(x = csew$theft[which(csew$educat2 == 0)],
                      w = csew$IndivWgt[which(csew$educat2 == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$theft[which(syn_res_OA$High_edu == 0)])
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$High_edu == 0)])
+
+# Mean of property crime victimisations by marriage status.
+stats::weighted.mean(x = csew$theft[which(csew$marsta == 1)],
+                     w = csew$IndivWgt[which(csew$marsta == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$Married == 1)])
+
+stats::weighted.mean(x = csew$theft[which(csew$marsta == 0)],
+                     w = csew$IndivWgt[which(csew$marsta == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$Married == 0)])
+
+# Mean of property crime victimisations by country of birth.
+stats::weighted.mean(x = csew$theft[which(csew$cry2 == 1)],
+                     w = csew$IndivWgt[which(csew$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$BornUK == 1)])
+
+stats::weighted.mean(x = csew$theft[which(csew$cry2 == 0)],
+                     w = csew$IndivWgt[which(csew$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$BornUK == 0)])
+
+# Mean of property crime victimisations by IMD deciles.
+stats::weighted.mean(x = csew$theft[which(csew$emdidec3 <= 3)],
+                     w = csew$IndivWgt[which(csew$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew$theft[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$IMD_rank > 3 & syn_res_OA$IMD_rank < 7)])
+
+stats::weighted.mean(x = csew$theft[which(csew$emdidec3 >= 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$theft.a[which(syn_res_OA$IMD_rank >= 7)])
 
 # Mean of violent crime victimisations by age.
 stats::weighted.mean(x = csew$violence[which(csew$age_rec == "less35")],
                      w = csew$IndivWgt[which(csew$age_rec == "less35")],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$age_rec == "less35")])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$age_rec == "less35")])
 
 stats::weighted.mean(x = csew$violence[which(csew$age_rec == "36to55")],
                      w = csew$IndivWgt[which(csew$age_rec == "36to55")],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$age_rec == "36to55")])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$age_rec == "36to55")])
 
 stats::weighted.mean(x = csew$violence[which(csew$age_rec == "56more")],
                      w = csew$IndivWgt[which(csew$age_rec == "56more")],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$age_rec == "56more")])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$age_rec == "56more")])
 
 # Mean of violent crime victimisations by sex.
 stats::weighted.mean(x = csew$violence[which(csew$sex == 1)],
                      w = csew$IndivWgt[which(csew$sex == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$Male == 1)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$Male == 1)])
 
 stats::weighted.mean(x = csew$violence[which(csew$sex == 0)],
                      w = csew$IndivWgt[which(csew$sex == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$Male == 0)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$Male == 0)])
 
 # Mean of violent crime victimisations by ethnic group.
 stats::weighted.mean(x = csew$violence[which(csew$reseth == 1)],
                      w = csew$IndivWgt[which(csew$reseth == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$White == 1)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$White == 1)])
 
 stats::weighted.mean(x = csew$violence[which(csew$reseth == 0)],
                      w = csew$IndivWgt[which(csew$reseth == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$White == 0)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$White == 0)])
 
 # Mean of violent crime victimisations by employment status.
 stats::weighted.mean(x = csew$violence[which(csew$remploy == 1)],
                      w = csew$IndivWgt[which(csew$remploy == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$No_income == 1)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$No_income == 1)])
 
 stats::weighted.mean(x = csew$violence[which(csew$remploy == 0)],
                      w = csew$IndivWgt[which(csew$remploy == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$No_income == 0)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$No_income == 0)])
 
 # Mean of violent crime victimisations by education level.
 stats::weighted.mean(x = csew$violence[which(csew$educat2 == 1)],
                      w = csew$IndivWgt[which(csew$educat2 == 1)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$High_edu == 1)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$High_edu == 1)])
 
 stats::weighted.mean(x = csew$violence[which(csew$educat2 == 0)],
                      w = csew$IndivWgt[which(csew$educat2 == 0)],
                      na.rm = T)
 
-mean(x = syn_res_OA$violence[which(syn_res_OA$High_edu == 0)])
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$High_edu == 0)])
+
+# Mean of violence crime victimisations by marriage status.
+stats::weighted.mean(x = csew$violence[which(csew$marsta == 1)],
+                     w = csew$IndivWgt[which(csew$marsta == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$Married == 1)])
+
+stats::weighted.mean(x = csew$violence[which(csew$marsta == 0)],
+                     w = csew$IndivWgt[which(csew$marsta == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$Married == 0)])
+
+# Mean of violence crime victimisations by country of birth.
+stats::weighted.mean(x = csew$violence[which(csew$cry2 == 1)],
+                     w = csew$IndivWgt[which(csew$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$BornUK == 1)])
+
+stats::weighted.mean(x = csew$violence[which(csew$cry2 == 0)],
+                     w = csew$IndivWgt[which(csew$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$BornUK == 0)])
+
+# Mean of violence crime victimisations by IMD deciles.
+stats::weighted.mean(x = csew$violence[which(csew$emdidec3 <= 3)],
+                     w = csew$IndivWgt[which(csew$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew$violence[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 > 3 & csew$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$IMD_rank > 3 & syn_res_OA$IMD_rank < 7)])
+
+stats::weighted.mean(x = csew$violence[which(csew$emdidec3 >= 7)],
+                     w = csew$IndivWgt[which(csew$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = syn_res_OA$violence.a[which(syn_res_OA$IMD_rank >= 7)])
 
 # Create three age groups for vehicle crime dataset.
 csew_vf_vehicle$age_rec <- NA
@@ -1557,6 +1855,58 @@ stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$educat2 
 mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
                                       Data_crimes$High_edu == 0)])
 
+# Mean of crime reporting for vehicle crimes by marriage status.
+stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$marsta == 1)],
+                     w = csew_vf_vehicle$IndivWgt.x[which(csew_vf_vehicle$marsta == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
+                                      Data_crimes$Married == 1)])
+
+stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$marsta == 0)],
+                     w = csew_vf_vehicle$IndivWgt.x[which(csew_vf_vehicle$marsta == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
+                                      Data_crimes$Married == 0)])
+
+# Mean of crime reporting for vehicle crimes by country of birth.
+stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$cry2 == 1)],
+                     w = csew_vf_vehicle$IndivWgt.x[which(csew_vf_vehicle$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
+                                      Data_crimes$BornUK == 1)])
+
+stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$cry2 == 0)],
+                     w = csew_vf_vehicle$IndivWgt.x[which(csew_vf_vehicle$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
+                                      Data_crimes$BornUK == 0)])
+
+# Mean of crime reporting for vehicle crimes by IMD deciles.
+stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$emdidec3 <= 3)],
+                     w = csew_vf_vehicle$IndivWgt.x[which(csew_vf_vehicle$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
+                                      Data_crimes$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$emdidec3 > 3 & csew_vf_vehicle$emdidec3 < 7)],
+                     w = csew_vf_vehicle$IndivWgt.x[which(csew_vf_vehicle$emdidec3 > 3 & csew_vf_vehicle$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
+                                      Data_crimes$IMD_rank > 3 & Data_crimes$IMD_rank > 7)])
+
+stats::weighted.mean(x = csew_vf_vehicle$copsknow[which(csew_vf_vehicle$emdidec3 >= 7)],
+                     w = csew_vf_vehicle$IndivWgt.x[which(csew_vf_vehicle$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$vehicle == 1 &
+                                      Data_crimes$IMD_rank >= 7)])
+
 # Create three age groups for residence crime data.
 csew_vf_residence$age_rec <- NA
 csew_vf_residence$age_rec[csew_vf_residence$age < 36] <- "less35"
@@ -1644,6 +1994,58 @@ stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$educ
 
 mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
                                       Data_crimes$High_edu == 0)])
+
+# Mean of crime reporting for residence crimes by marriage status.
+stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$marsta == 1)],
+                     w = csew_vf_residence$IndivWgt.x[which(csew_vf_residence$marsta == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
+                                      Data_crimes$Married == 1)])
+
+stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$marsta == 0)],
+                     w = csew_vf_residence$IndivWgt.x[which(csew_vf_residence$marsta == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
+                                      Data_crimes$Married == 0)])
+
+# Mean of crime reporting for residence crimes by country of birth.
+stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$cry2 == 1)],
+                     w = csew_vf_residence$IndivWgt.x[which(csew_vf_residence$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
+                                      Data_crimes$BornUK == 1)])
+
+stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$cry2 == 0)],
+                     w = csew_vf_residence$IndivWgt.x[which(csew_vf_residence$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
+                                      Data_crimes$BornUK == 0)])
+
+# Mean of crime reporting for residence crimes by IMD deciles.
+stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$emdidec3 <= 3)],
+                     w = csew_vf_residence$IndivWgt.x[which(csew_vf_residence$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
+                                      Data_crimes$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$emdidec3 > 3 & csew_vf_residence$emdidec3 < 7)],
+                     w = csew_vf_residence$IndivWgt.x[which(csew_vf_residence$emdidec3 > 3 & csew_vf_residence$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
+                                      Data_crimes$IMD_rank > 3 & Data_crimes$IMD_rank > 7)])
+
+stats::weighted.mean(x = csew_vf_residence$copsknow[which(csew_vf_residence$emdidec3 >= 7)],
+                     w = csew_vf_residence$IndivWgt.x[which(csew_vf_residence$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$residence == 1 &
+                                      Data_crimes$IMD_rank >= 7)])
 
 # Create three age groups for property crime data.
 csew_vf_theft$age_rec <- NA
@@ -1733,6 +2135,58 @@ stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$educat2 == 0
 mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
                                       Data_crimes$High_edu == 0)])
 
+# Mean of crime reporting for property crimes by marriage status.
+stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$marsta == 1)],
+                     w = csew_vf_theft$IndivWgt.x[which(csew_vf_theft$marsta == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
+                                      Data_crimes$Married == 1)])
+
+stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$marsta == 0)],
+                     w = csew_vf_theft$IndivWgt.x[which(csew_vf_theft$marsta == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
+                                      Data_crimes$Married == 0)])
+
+# Mean of crime reporting for property crimes by country of birth.
+stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$cry2 == 1)],
+                     w = csew_vf_theft$IndivWgt.x[which(csew_vf_theft$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
+                                      Data_crimes$BornUK == 1)])
+
+stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$cry2 == 0)],
+                     w = csew_vf_theft$IndivWgt.x[which(csew_vf_theft$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
+                                      Data_crimes$BornUK == 0)])
+
+# Mean of crime reporting for property crimes by IMD deciles.
+stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$emdidec3 <= 3)],
+                     w = csew_vf_theft$IndivWgt.x[which(csew_vf_theft$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
+                                      Data_crimes$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$emdidec3 > 3 & csew_vf_theft$emdidec3 < 7)],
+                     w = csew_vf_theft$IndivWgt.x[which(csew_vf_theft$emdidec3 > 3 & csew_vf_theft$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
+                                      Data_crimes$IMD_rank > 3 & Data_crimes$IMD_rank > 7)])
+
+stats::weighted.mean(x = csew_vf_theft$copsknow[which(csew_vf_theft$emdidec3 >= 7)],
+                     w = csew_vf_theft$IndivWgt.x[which(csew_vf_theft$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$theft == 1 &
+                                      Data_crimes$IMD_rank >= 7)])
+
 #Create three age groups for violent crimes data.
 csew_vf_violence$age_rec <- NA
 csew_vf_violence$age_rec[csew_vf_violence$age < 36] <- "less35"
@@ -1820,3 +2274,55 @@ stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$educat
 
 mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
                                       Data_crimes$High_edu == 0)])
+
+# Mean of crime reporting for violence crimes by marriage status.
+stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$marsta == 1)],
+                     w = csew_vf_violence$IndivWgt.x[which(csew_vf_violence$marsta == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
+                                      Data_crimes$Married == 1)])
+
+stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$marsta == 0)],
+                     w = csew_vf_violence$IndivWgt.x[which(csew_vf_violence$marsta == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
+                                      Data_crimes$Married == 0)])
+
+# Mean of crime reporting for violence crimes by country of birth.
+stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$cry2 == 1)],
+                     w = csew_vf_violence$IndivWgt.x[which(csew_vf_violence$cry2 == 1)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
+                                      Data_crimes$BornUK == 1)])
+
+stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$cry2 == 0)],
+                     w = csew_vf_violence$IndivWgt.x[which(csew_vf_violence$cry2 == 0)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
+                                      Data_crimes$BornUK == 0)])
+
+# Mean of crime reporting for violence crimes by IMD deciles.
+stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$emdidec3 <= 3)],
+                     w = csew_vf_violence$IndivWgt.x[which(csew_vf_violence$emdidec3 <= 3)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
+                                      Data_crimes$IMD_rank <= 3)])
+
+stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$emdidec3 > 3 & csew_vf_violence$emdidec3 < 7)],
+                     w = csew_vf_violence$IndivWgt.x[which(csew_vf_violence$emdidec3 > 3 & csew_vf_violence$emdidec3 < 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
+                                      Data_crimes$IMD_rank > 3 & Data_crimes$IMD_rank > 7)])
+
+stats::weighted.mean(x = csew_vf_violence$copsknow[which(csew_vf_violence$emdidec3 >= 7)],
+                     w = csew_vf_violence$IndivWgt.x[which(csew_vf_violence$emdidec3 >= 7)],
+                     na.rm = T)
+
+mean(x = Data_crimes$copsknow[which(Data_crimes$violence == 1 &
+                                      Data_crimes$IMD_rank >= 7)])
