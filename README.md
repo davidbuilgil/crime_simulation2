@@ -63,6 +63,10 @@ Choose ‘Manchester’ within the option ‘List areas within’, and click on 
 ON THE LEFT PANEL: Click on ‘Marital status’ and tick the options ‘All usual residents’, ‘Married’ and ‘In a registered same-sex civil partnership’  
 ON THE LEFT PANEL: Click on ‘Download data’ and then ‘Download data for Excel 2007 (.xlsx)’  
 
+CRIME SURVEY FOR ENGLAND AND WALES 2011-2012.  
+Search for "Crime Survey for England and Wales 2011-2012" on the [UK Data Service portal](http://discover.ukdataservice.ac.uk/) and download the files "csew_apr11mar12_nvf.sav" and "csew_apr11mar12_vf.sav". Note that these files are very large. As detailed below, you can use the 'data_convert_preperation.R' script to reduce the data sizes. You can read more about this wave of the survey in the [documentation](http://doc.ukdataservice.ac.uk/doc/7252/mrdoc/pdf/7252_csew_2011-2012_technicalreport.pdf).
+
+POLICE RECORDED CRIME  
 Police recorded crime data for Greater Manchester Police can be obtained from the [open data portal](https://data.police.uk/data/). The time period is selected via the dropdown menus, and police force selected using tickboxes. Files are downloaded month-by-month in .csv format.
 
 Index of Multiple Deprivation 2010 data are downlaoded from the file 'English IMD 2010 mapped onto 2011 LSOAs' published by the [Consumer Data Research Centre](https://data.cdrc.ac.uk/dataset/index-multiple-deprivation-imd).
