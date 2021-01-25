@@ -788,7 +788,7 @@ ggsave(plot = full_plot_group, filename = "visuals/full_boxplot_grouped.png", he
 # Function to calculate ARB stats for each crime type.
 ARB_fun <- function(x){
   x %>%
-    mutate(RB  = ((all_crimes / known)-1) * 100) %>% 
+    mutate(RB  = ((known / all_crimes)-1) * 100) %>% 
     group_by(unit_type) %>% 
     summarise(mean_RB    = mean(RB),
               min_RB     = min(RB),
